@@ -257,7 +257,7 @@ def main(args):
     valid_loader = create_valid_loader(
         valid_dataset, BATCH_SIZE, NUM_WORKERS, batch_sampler=valid_sampler
     )
-    print(f"Number of training samples: {len(train_dataset)}")
+    #print(f"Number of training samples: {len(train_dataset)}")
     print(f"Number of validation samples: {len(valid_dataset)}\n")
 
     if VISUALIZE_TRANSFORMED_IMAGES:
@@ -280,7 +280,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model[args['model']]
-        model = build_model(num_classes=NUM_CLASSES, pretrained=True)
+        model = build_model(num_classes=NUM_CLASSES, pretrained=True, coco_model= False)
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:

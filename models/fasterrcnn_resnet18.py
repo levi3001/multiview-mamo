@@ -55,7 +55,10 @@ def create_model(num_classes, pretrained=True, coco_model=False):
         backbone=backbone,
         num_classes=num_classes,
         rpn_anchor_generator=anchor_generator,
-        box_roi_pool=roi_pooler
+        box_roi_pool=roi_pooler,
+        rpn_fg_iou_thresh=0.2,
+        rpn_bg_iou_thresh=0.2,
+        box_nms_thresh=0.1
     )
     return model
 

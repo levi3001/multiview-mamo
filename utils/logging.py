@@ -132,6 +132,7 @@ def overlay_on_canvas(bg, image):
     h1, w1 = image.shape[:2]
     # Center of canvas (background).
     cx, cy = (h - h1) // 2, (w - w1) // 2
+    
     bg_copy[cy:cy + h1, cx:cx + w1] = image
     return bg_copy * 255.
 
@@ -180,8 +181,8 @@ def wandb_log(
         {'val_map_05': val_map_05}
     )
 
-    bg = np.full((image_size * 2, image_size * 2, 3), 114, dtype=np.float32)
-
+    #bg = np.full((image_size * 2, image_size * 2, 3), 114, dtype=np.float32)
+    bg = np.full((3518,2800,3),114, dtype=np.float32)
     if len(val_pred_image) == 1:
         log_image = overlay_on_canvas(bg, val_pred_image[0])
         wandb.log({'predictions': [wandb.Image(log_image)]})

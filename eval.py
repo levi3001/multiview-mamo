@@ -19,7 +19,7 @@ import yaml
 import torchvision
 import time
 import numpy as np
-
+from torch_utils import froc
 torch.multiprocessing.set_sharing_strategy('file_system')
 
 if __name__ == '__main__':
@@ -135,6 +135,7 @@ if __name__ == '__main__':
         model, 
         data_loader, 
         device, 
+        num_classes =2,
         out_dir=None,
         classes=None,
         colors=None
@@ -159,7 +160,8 @@ if __name__ == '__main__':
             model_time = time.time()
             with torch.no_grad():
                 outputs = model(images)
-
+                #print('out',outputs)
+                #print('tar',targets)
             #####################################
             for i in range(len(images)):
                 true_dict = dict()
@@ -174,13 +176,14 @@ if __name__ == '__main__':
             #####################################
 
             outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
-
         # gather the stats from all processes
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
-        metric = MeanAveragePrecision(class_metrics=args['verbose'])
-        metric.update(preds, target)
-        metric_summary = metric.compute()
+        #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
+        metric = froc.FROC(num_classes)
+        #metric.update(preds, target)
+        #metric_summary = metric.compute()
+        metric_summary = metric.compute(preds,target)
         return metric_summary
 
     stats = evaluate(
