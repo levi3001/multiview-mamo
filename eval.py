@@ -190,6 +190,7 @@ if __name__ == '__main__':
         model, 
         valid_loader, 
         device=DEVICE,
+        num_classes = NUM_CLASSES,
         classes=CLASSES,
     )
 

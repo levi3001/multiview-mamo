@@ -43,9 +43,15 @@ def train_one_epoch(
 
     step_counter = 0
     for images, targets in metric_logger.log_every(data_loader, print_freq, header):
+        #print('train', type(image))
+        #print(images.shape)
         step_counter += 1
+        #images = images.to(device)
         images = list(image.to(device) for image in images)
-        targets = [{k: v.to(device).to(torch.int64) for k, v in t.items()} for t in targets]
+        #images = torch.stack(images)
+        #print(images.shape)
+        #images = images.to(device)
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
 
         with torch.cuda.amp.autocast(enabled=scaler is not None):

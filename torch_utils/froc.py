@@ -109,9 +109,19 @@ def update_stats(
     """
     for i in range(len(targets)):
         for cat in range(1,num_classes):
-
-            n_gt = len(targets[i]['boxes'])
-            n_pr = len(preds[i]['boxes'])
+            target_cat=[]
+            pred_cat= []
+            for j, boxes in enumerate(targets[i]['boxes']):
+                
+                if targets[i]['labels'][j] == cat:
+                    target_cat.append(boxes)
+            for j, boxes in enumerate(preds[i]['boxes']):
+                #print(i, preds[i]['labels'][j], preds[i]['boxes'][j])
+                if preds[i]['labels'][j] == cat:
+                    pred_cat.append(boxes)
+            n_gt = len(target_cat)
+            n_pr = len(pred_cat)
+            #print(i, cat, n_gt, n_pr)
             #print(targets[i]['boxes'])
             #print('pred',preds[i]['boxes'])
             if n_gt == 0:
@@ -122,13 +132,13 @@ def update_stats(
             else:
                 cost_matrix = np.ones((n_gt, n_pr)) * 1e6
 
-                for gt_ind, gt_box in enumerate(targets[i]['boxes']):
-                    for pr_ind, pr_box in enumerate(preds[i]['boxes']):
+                for gt_ind, gt_box in enumerate(target_cat):
+                    for pr_ind, pr_box in enumerate(pred_cat):
                         iou_score = get_iou_score(
                             gt_box,
                             pr_box,
                         )
-                        print('iou_score', iou_score)
+                        #print('iou_score', iou_score)
                         if iou_score > iou_thres:
                             cost_matrix[gt_ind, pr_ind] = iou_score / (
                                 np.random.uniform(0, 1) / 1e6
@@ -137,9 +147,9 @@ def update_stats(
                 row_ind, col_ind = linear_sum_assignment(
                     cost_matrix,
                 )  # Hungarian-matching
-                print('row_ind',row_ind)
-                print('n_pr',n_pr)
-                print('col_ind',col_ind)
+                # print('row_ind',row_ind)
+                # print('n_pr',n_pr)
+                # print('col_ind',col_ind)
                 n_true_positives = len(row_ind)
                 n_false_positives = max(n_pr - len(col_ind), 0)
 
@@ -175,7 +185,7 @@ def calc_scores(stats, lls_accuracy, nlls_per_image):
 
     return lls_accuracy, nlls_per_image
 class FROC():
-    def __init__(self, num_classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0, n_sample_points= 50,plot_title='FROC curve'):
+    def __init__(self, num_classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0, n_sample_points= 10000,plot_title='FROC curve'):
         self.threshold = threshold 
         self.iou_thres = iou_thres
         self.n_sample_points = n_sample_points
@@ -184,21 +194,37 @@ class FROC():
     def compute(self, preds, targets):
         lls_accuracy = {}
         nlls_per_image = {}
+        thres_list = np.linspace(0,1e-3,1000, endpoint= False)
+        thres_list2 = np.linspace(0,1,1000)
+        thres_list = np.append(thres_list, thres_list2[1:])
+        print(thres_list)
+        first1= True
+        first2= True
         for score_thres in tqdm(
-                np.linspace(0.0, 1.0, self.n_sample_points, endpoint=False)
+                thres_list
         ):
+            #print(score_thres)
             preds= update_scores(preds,score_thres)
             stats = init_stats(targets, self.num_classes)
+            
             stats = update_stats(stats, preds, targets, self.iou_thres, self.num_classes)
             lls_accuracy, nlls_per_image = calc_scores(
                 stats, lls_accuracy,
                 nlls_per_image,
             )
-        print(lls_accuracy, nlls_per_image)
+            
+            if nlls_per_image[1][-1] <1 and first1:
+                print(1, score_thres)
+                first1 =False
+            
+            if nlls_per_image[2][-1] <1 and first2:
+                print(2, score_thres)
+                first2= False
+        #print(lls_accuracy, nlls_per_image)
         if self.plot_title:
             fig, ax = plt.subplots(figsize=[27, 18])
-            ins = ax.inset_axes([0.55, 0.05, 0.45, 0.4])
-            ins.set_xticks(
+            #ins = ax.inset_axes([0.55, 0.05, 0.45, 0.4])
+            ax.set_xticks(
                 [0.1, 1.0, 2.0, 3.0, 4.0], [
                     0.1, 1.0, 2.0, 3.0, 4.0,
                 ], fontsize=30,
@@ -209,15 +235,19 @@ class FROC():
             lls = lls_accuracy[category_id]
             nlls = nlls_per_image[category_id]
             if self.plot_title:
-                ax.semilogx(
+                ax.plot(
                     nlls,
                     lls,
                     'x--',
-                    label='AI ' ,
+                    label=category_id ,
                 )
-                ins.plot(
-                    nlls,
-                    lls,
-                    'x--',
-                    label='AI ' ,
-                )
+            x= []
+            y= []
+            for i in range(1,len(nlls)):
+                if nlls[i]< nlls[i-1]:
+                    x.append(nlls[i])
+                    y.append(lls[i])
+            print(len(x), len(y))
+            print(np.interp([0.5,1.0,2.0,4.0], x[::-1], y[::-1]))
+        plt.legend()
+        plt.savefig('result.png')

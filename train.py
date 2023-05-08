@@ -348,8 +348,8 @@ def main(args):
     # Get the model parameters.
     params = [p for p in model.parameters() if p.requires_grad]
     # Define the optimizer.
-    optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov=True)
-    # optimizer = torch.optim.AdamW(params, lr=0.0001, weight_decay=0.0005)
+    optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov= False, weight_decay= 1e-4)
+    #optimizer = torch.optim.AdamW(params, lr=0.0001, weight_decay=0.0005)
     if args['resume_training']: 
         # LOAD THE OPTIMIZER STATE DICTIONARY FROM THE CHECKPOINT.
         print('Loading optimizer state dictionary...')
@@ -363,6 +363,7 @@ def main(args):
             optimizer, 
             T_0=steps,
             T_mult=1,
+            eta_min= 0.0001,
             verbose=False
         )
     else:
@@ -387,17 +388,28 @@ def main(args):
             print_freq=100,
             scheduler=scheduler
         )
-
-        stats, val_pred_image = evaluate(
-            model, 
-            valid_loader, 
-            device=DEVICE,
-            save_valid_preds=SAVE_VALID_PREDICTIONS,
-            out_dir=OUT_DIR,
-            classes=CLASSES,
-            colors=COLORS
-        )
-
+        if epoch%5 ==0:
+            stats, val_pred_image = evaluate(
+                model, 
+                valid_loader, 
+                device=DEVICE,
+                save_valid_preds=SAVE_VALID_PREDICTIONS,
+                out_dir=OUT_DIR,
+                classes=CLASSES,
+                colors=COLORS
+            )
+            val_map_05.append(stats[1])
+            val_map.append(stats[0])        
+            # Save mAP plots.
+            save_mAP(OUT_DIR, val_map_05, val_map)
+            # Save mAP plot using TensorBoard.
+            tensorboard_map_log(
+                name='mAP', 
+                val_map_05=np.array(val_map_05), 
+                val_map=np.array(val_map),
+                writer=writer,
+                epoch=epoch
+            )
         # Append the current epoch's batch-wise losses to the `train_loss_list`.
         train_loss_list.extend(batch_loss_list)
         loss_cls_list.append(np.mean(np.array(batch_loss_cls_list,)))
@@ -407,8 +419,7 @@ def main(args):
 
         # Append curent epoch's average loss to `train_loss_list_epoch`.
         train_loss_list_epoch.append(train_loss_hist.value)
-        val_map_05.append(stats[1])
-        val_map.append(stats[0])
+
 
         # Save loss plot for batch-wise list.
         save_loss_plot(OUT_DIR, train_loss_list)
@@ -450,8 +461,7 @@ def main(args):
             save_name='train_loss_rpn_bbox'
         )
 
-        # Save mAP plots.
-        save_mAP(OUT_DIR, val_map_05, val_map)
+
 
         # Save batch-wise train loss plot using TensorBoard. Better not to use it
         # as it increases the TensorBoard log sizes by a good extent (in 100s of MBs).
@@ -465,14 +475,7 @@ def main(args):
             epoch
         )
 
-        # Save mAP plot using TensorBoard.
-        tensorboard_map_log(
-            name='mAP', 
-            val_map_05=np.array(val_map_05), 
-            val_map=np.array(val_map),
-            writer=writer,
-            epoch=epoch
-        )
+
 
         coco_log(OUT_DIR, stats)
         csv_log(

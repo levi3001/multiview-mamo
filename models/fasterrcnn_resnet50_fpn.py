@@ -8,7 +8,7 @@ def create_model(num_classes, pretrained=True, coco_model=False):
         weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.DEFAULT,
         rpn_fg_iou_thresh=0.5,
         rpn_bg_iou_thresh=0.2,
-        box_score_thresh=0.01,
+        box_score_thresh=0.001,
         box_nms_thresh=0.1
     )
     if coco_model: # Return the COCO pretrained model for COCO classes.
