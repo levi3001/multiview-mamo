@@ -140,16 +140,7 @@ def _coco_remove_images_without_annotations(dataset, cat_list=None):
     return dataset
 
 
-def convert_to_coco_api(ds):
-    coco_ds = COCO()
-    # annotation IDs need to start at 1, not 0, see torchvision issue #1530
-    ann_id = 1
-    dataset = {"images": [], "categories": [], "annotations": []}
-    categories = set()
-    for img_idx in range(len(ds)):
-        # find better way to get target
-        # targets = ds.get_annotations(img_idx)
-        img, targets = ds[img_idx]
+def update_dataset(dataset,categories, img, targets, ann_id):
         image_id = targets["image_id"].item()
         img_dict = {}
         img_dict["id"] = image_id
@@ -187,12 +178,45 @@ def convert_to_coco_api(ds):
                 ann["num_keypoints"] = sum(k != 0 for k in keypoints[i][2::3])
             dataset["annotations"].append(ann)
             ann_id += 1
+
+def convert_to_coco_api(ds):
+    coco_ds = COCO()
+    # annotation IDs need to start at 1, not 0, see torchvision issue #1530
+    ann_id = 1
+    dataset = {"images": [], "categories": [], "annotations": []}
+    categories = set()
+    for img_idx in range(len(ds)):
+        # find better way to get target
+        # targets = ds.get_annotations(img_idx)
+        img, targets = ds[img_idx]
+        update_dataset(dataset,categories, img, targets, ann_id)
     dataset["categories"] = [{"id": i} for i in sorted(categories)]
     coco_ds.dataset = dataset
     coco_ds.createIndex()
     return coco_ds
 
-
+def convert_to_coco_api_multi(ds):
+    coco_ds_CC =COCO()
+    coco_ds_MLO = COCO()
+    ann_id_CC =1
+    ann_id_MLO =1 
+    dataset_CC = {"images": [], "categories": [], "annotations": []}
+    dataset_MLO = {"images": [], "categories": [], "annotations": []}
+    categories_CC =set()
+    categories_MLO =set()
+    for img_idx in range(len(ds)):
+        img_CC, img_MLO, targets_CC, targets_MLO = ds[img_idx]
+        update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
+        update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
+    dataset_CC["categories"] = [{"id": i} for i in sorted(categories_CC)]
+    dataset_MLO["categories"] = [{"id": i} for i in sorted(categories_MLO)]
+    coco_ds_CC.dataset = dataset_CC
+    coco_ds_MLO.dataset = dataset_MLO
+    coco_ds_CC.createIndex()
+    coco_ds_MLO.createIndex() 
+    return coco_ds_CC, coco_ds_MLO
+    
+    
 def get_coco_api_from_dataset(dataset):
     for _ in range(10):
         if isinstance(dataset, torchvision.datasets.CocoDetection):
@@ -202,6 +226,10 @@ def get_coco_api_from_dataset(dataset):
     if isinstance(dataset, torchvision.datasets.CocoDetection):
         return dataset.coco
     return convert_to_coco_api(dataset)
+
+
+def get_coco_api_from_dataset(dataset):
+    return convert_to_coco_api_multi(dataset)
 
 class CocoDetection(torchvision.datasets.CocoDetection):
     def __init__(self, img_folder, ann_file, transforms):

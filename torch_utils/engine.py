@@ -175,3 +175,106 @@ def evaluate(
     stats = coco_evaluator.summarize()
     torch.set_num_threads(n_threads)
     return stats, val_saved_image
+
+
+def train_one_epoch_multi(
+    model, 
+    optimizer, 
+    data_loader, 
+    device, 
+    epoch, 
+    train_loss_hist,
+    print_freq, 
+    scaler=None,
+    scheduler=None
+):
+    model.train()
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
+    header = f"Epoch: [{epoch}]"
+
+    # List to store batch losses.
+    batch_loss_list = []
+    batch_loss_cls_list = []
+    batch_loss_box_reg_list = []
+    batch_loss_objectness_list = []
+    batch_loss_rpn_list = []
+
+    lr_scheduler = None
+    if epoch == 0:
+        warmup_factor = 1.0 / 1000
+        warmup_iters = min(1000, len(data_loader) - 1)
+
+        lr_scheduler = torch.optim.lr_scheduler.LinearLR(
+            optimizer, start_factor=warmup_factor, total_iters=warmup_iters
+        )
+
+    step_counter = 0
+    for images_CC, images_MLO, targets_CC, targets_MLO in metric_logger.log_every(data_loader, print_freq, header):
+        #print('train', type(image))
+        #print(images.shape)
+        step_counter += 1
+        #images = images.to(device)
+        images_CC = list(image_CC.to(device) for image_CC in images_CC)
+        images_MLO = list(image_MLO.to(device) for image_MLO in images_MLO)
+        #images = torch.stack(images)
+        #print(images.shape)
+        #images = images.to(device)
+        targets_CC = [{k: v.to(device) for k, v in t.items()} for t in targets_CC]
+        targets_MLO = [{k: v.to(device) for k, v in t.items()} for t in targets_MLO]
+
+
+        with torch.cuda.amp.autocast(enabled=scaler is not None):
+            loss_dict_CC, loss_dict_MLO = model(images_CC, images_MLO, targets_CC, targets_MLO)
+            losses_CC = sum(loss for loss in loss_dict_CC.values())
+            losses_MLO = sum(loss for loss in loss_dict_MLO.values())
+            losses = losses_CC + losses_MLO
+        # reduce losses over all GPUs for logging purposes
+        loss_dict_reduced_CC = utils.reduce_dict(loss_dict_CC)
+        loss_dict_reduced_MLO = utils.reduce_dict(loss_dict_MLO)
+        loss_dict_reduced = {}
+        for key in loss_dict_reduced_CC:
+            loss_dict_reduced[key] = loss_dict_reduced_CC[key]+ loss_dict_reduced_MLO[key]
+        
+        losses_reduced = sum(loss for loss in loss_dict_reduced_CC.values()) + sum(loss for loss in loss_dict_reduced_MLO.values())
+
+        loss_value = losses_reduced.item()
+
+        if not math.isfinite(loss_value):
+            print(f"Loss is {loss_value}, stopping training")
+            print(loss_dict_reduced_CC, loss_dict_reduced_MLO)
+            sys.exit(1)
+
+        optimizer.zero_grad()
+        if scaler is not None:
+            scaler.scale(losses).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            losses.backward()
+            optimizer.step()
+
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+
+        metric_logger.update(loss=losses_reduced, **loss_dict_reduced)
+        metric_logger.update(lr=optimizer.param_groups[0]["lr"])
+
+        batch_loss_list.append(loss_value)
+        batch_loss_cls_list.append(loss_dict_reduced['loss_classifier'].detach().cpu())
+        batch_loss_box_reg_list.append(loss_dict_reduced['loss_box_reg'].detach().cpu())
+        batch_loss_objectness_list.append(loss_dict_reduced['loss_objectness'].detach().cpu())
+        batch_loss_rpn_list.append(loss_dict_reduced['loss_rpn_box_reg'].detach().cpu())
+        train_loss_hist.send(loss_value)
+
+        if scheduler is not None:
+            scheduler.step(epoch + (step_counter/len(data_loader)))
+
+    return (
+        metric_logger, 
+        batch_loss_list, 
+        batch_loss_cls_list, 
+        batch_loss_box_reg_list, 
+        batch_loss_objectness_list, 
+        batch_loss_rpn_list
+    )

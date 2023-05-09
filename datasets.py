@@ -390,7 +390,48 @@ class CustomDataset2(Dataset):
     def __len__(self):
         return len(self.image_id['image_id'])
     
-    
+
+
+
+def create_train_dataset_multi(
+    train_dir_images, 
+    train_dir_labels, 
+    img_size, 
+    classes,
+    use_train_aug=False,
+    no_mosaic=False,
+    square_training=False
+):
+    train_dataset = TwoviewDataset(
+        train_dir_images, 
+        train_dir_labels,
+        img_size, 
+        classes, 
+        train_transform,
+        use_train_aug=use_train_aug,
+        train=True, 
+        no_mosaic=no_mosaic,
+        square_training=square_training
+    )
+    return train_dataset
+def create_valid_dataset_multi(
+    train_dir_images, 
+    train_dir_labels, 
+    img_size, 
+    classes,
+    square_training=False
+):
+    valid_dataset = TwoviewDataset(
+        train_dir_images, 
+        train_dir_labels,
+        img_size, 
+        classes, 
+        valid_transform,
+        train=False, 
+        no_mosaic=True,
+        square_training=square_training
+    )
+    return valid_dataset
     
 class TwoviewDataset(Dataset):
     def __init__(

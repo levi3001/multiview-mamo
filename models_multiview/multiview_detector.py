@@ -6,10 +6,17 @@ import torch
 import torchvision
 from torch import nn, Tensor
 from torchvision.models.detection import generalized_rcnn, faster_rcnn, roi_heads
-
+from detection.Multi_roi_heads import Multi_roi_heads
 class Multiview_fasterrcnn(faster_rcnn):
     def __init__(self):
         super().__init__()
+        self.roi_heads = Multi_roi_heads()
+    def eager_outputs(self, loss_CC, loss_MLO, detections_CC, detections_MLO):
+        if self.training:
+            return loss_CC, loss_MLO
+
+        return detections_CC, detections_MLO
+    
     def backbone_forward(self, images, targets):
         original_image_sizes: List[Tuple[int, int]] = []
         for img in images:
@@ -39,10 +46,24 @@ class Multiview_fasterrcnn(faster_rcnn):
                     )
 
         features = self.backbone(images.tensors)
-        return features, targets
-    def forward(self, image_CC, image_MLO, target_CC, target_MLO):
-        feat_CC, target_CC = self.backbone_forward(image_CC, target_CC)
-        feat_MLO, target_MLO = self.backbone_forward(image_MLO, target_MLO)
+        return features, targets, original_image_sizes
+    def forward(self, image_CC, image_MLO, target_CC = None, target_MLO = None):
+        feat_CC, target_CC, original_image_sizes_CC = self.backbone_forward(image_CC, target_CC)
+        feat_MLO, target_MLO, original_image_sizes_MLO = self.backbone_forward(image_MLO, target_MLO)
         if isinstance(feat_CC, torch.Tensor):
             feat_CC = OrderedDict([("0", feat_CC)])
             feat_MLO = OrderedDict([("0", feat_MLO)])
+        proposals_CC, proposal_losses_CC = self.rpn(image_CC, feat_CC, target_CC)
+        proposals_MLO, proposal_losses_MLO = self.rpn(image_MLO, target_MLO)
+        detections_CC, detections_MLO, detector_losses_CC, detector_losses_MLO = self.roi_heads(feat_CC, proposals_CC, image_CC.image_sizes,\
+                                                                                                feat_MLO, proposals_MLO, image_MLO.image_sizes,\
+                                                                                                    target_CC, target_MLO)
+        detections_CC = self.transform.postprocess(detections_CC, image_CC.image_sizes, original_image_sizes_CC)  # type: ignore[operator]
+        detections_MLO = self.transform.postprocess(detections_MLO, image_MLO.image_sizes, original_image_sizes_MLO)
+        losses_CC = {}
+        losses_CC.update(detector_losses_CC)
+        losses_CC.update(proposal_losses_CC)
+        losses_MLO = {}
+        losses_MLO.update(detector_losses_MLO)
+        losses_MLO.update(proposal_losses_MLO)
+        return self.eager_outputs(losses_CC, losses_MLO, detections_CC, detections_MLO)
