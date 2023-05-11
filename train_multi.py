@@ -17,7 +17,7 @@ from torch.utils.data import (
     distributed, RandomSampler, SequentialSampler
 )
 from datasets import (
-    create_train_dataset_multi, create_valid_dataset_multi, 
+    create_train_dataset_multi, create_valid_dataset_multi, create_train_loader, create_valid_loader
 )
 from models_multiview.multiview_detector import create_model
 from utils.general import (
@@ -272,13 +272,17 @@ def main(args):
     loss_objectness_list = []
     loss_rpn_list = []
     train_loss_list_epoch = []
-    val_map_05 = []
-    val_map = []
+    val_map_05 =[]
+    val_map =[]
+    val_map_05_CC = []
+    val_map_CC = []
+    val_map_05_MLO = []
+    val_map_MLO = []
     start_epochs = 0
 
     if args['weights'] is None:
         print('Building model from scratch...')
-        build_model = create_model[args['model']]
+        build_model = create_model
         model = build_model(num_classes=NUM_CLASSES, pretrained=True, coco_model= False)
 
     # Load pretrained weights if path is provided.
@@ -293,7 +297,7 @@ def main(args):
         old_classes = ckpt_state_dict['roi_heads.box_predictor.cls_score.weight'].shape[0]
 
         # Build the new model with number of classes same as checkpoint.
-        build_model = create_model[args['model']]
+        build_model = create_model
         model = build_model(num_classes=old_classes)
         # Load weights.
         model.load_state_dict(ckpt_state_dict)
@@ -388,7 +392,7 @@ def main(args):
             scheduler=scheduler
         )
         if epoch%5 ==0:
-            stats, val_pred_image = evaluate_multi(
+            stats_CC, stats_MLO = evaluate_multi(
                 model, 
                 valid_loader, 
                 device=DEVICE,
@@ -397,8 +401,12 @@ def main(args):
                 classes=CLASSES,
                 colors=COLORS
             )
-            val_map_05.append(stats[1])
-            val_map.append(stats[0])        
+            val_map_05_CC.append(stats_CC[1])
+            val_map_CC.append(stats_CC[0])
+            val_map_05_MLO.append(stats_MLO[1])
+            val_map_MLO.append(stats_MLO[0])
+            val_map.append(stats_CC[0]+stats_MLO[0])
+            val_map_05.append(stats_CC[1]+ stats_MLO[1])        
             # Save mAP plots.
             save_mAP(OUT_DIR, val_map_05, val_map)
             # Save mAP plot using TensorBoard.

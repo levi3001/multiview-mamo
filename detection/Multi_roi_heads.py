@@ -23,7 +23,6 @@ def pad_sequence(sequences, batch_first=True, padding_value=0):
     """
     # Find the maximum sequence length
     max_length = max([len(seq) for seq in sequences])
-
     # Pad the sequences with zeros
     padded_sequences = [torch.nn.functional.pad(seq, (0, 0, 0, max_length - len(seq)), value=padding_value) for seq in sequences]
 
@@ -116,6 +115,8 @@ class Multi_roi_heads(RoIHeads):
         keypoint_roi_pool=None,
         keypoint_head=None,
         keypoint_predictor=None)
+        
+        
         self.crossview = CrossviewTransformer()
         self.pos_encode = PositionEmbeddingSine(1024)
     def postprocess_detections(
@@ -219,12 +220,16 @@ class Multi_roi_heads(RoIHeads):
             regression_targets_MLO = None
             matched_idxs_CC = None
             matched_idxs_MLO = None
-
         box_features_CC = self.box_roi_pool(feat_CC, proposals_CC, image_shapes_CC)
         box_features_MLO = self.box_roi_pool(feat_MLO, proposals_MLO, image_shapes_MLO)
 
         box_features_CC = self.box_head(box_features_CC)
         box_features_MLO =self.box_head(box_features_MLO)
+        
+        boxes_per_image_CC = [boxes_in_image.shape[0] for boxes_in_image in proposals_CC]
+        boxes_per_image_MLO = [boxes_in_image.shape[0] for boxes_in_image in proposals_MLO]
+        box_features_CC = box_features_CC.split(boxes_per_image_CC, 0)
+        box_features_MLO = box_features_MLO.split(boxes_per_image_MLO, 0)
         
         box_features_CC = pad_sequence(box_features_CC)
         box_features_MLO = pad_sequence(box_features_MLO)
@@ -235,27 +240,46 @@ class Multi_roi_heads(RoIHeads):
         box_features_CC, box_features_MLO = self.crossview(box_features_CC, box_features_MLO, CC_key_padding_mask, MLO_key_padding_mask,\
             CC_pos= CC_pos, MLO_pos= MLO_pos)
         
-        class_logits, box_regression = self.box_predictor(box_features)
+        box_features_CC = box_features_CC[~CC_key_padding_mask]
+        box_features_MLO = box_features_MLO[~MLO_key_padding_mask]
+        print(box_features_CC)
+        
+        class_logits_CC, box_regression_CC = self.box_predictor(box_features_CC)
+        class_logits_MLO, box_regression_MLO = self.box_predictor(box_features_MLO)
 
 
-        result: List[Dict[str, torch.Tensor]] = []
-        losses = {}
+        result_CC: List[Dict[str, torch.Tensor]] = []
+        result_MLO: List[Dict[str, torch.Tensor]] = []
+        loss_CC = {}
+        loss_MLO = {}
         if self.training:
-            if labels is None:
+            if labels_CC is None or labels_MLO is None:
                 raise ValueError("labels cannot be None")
-            if regression_targets is None:
+            if regression_targets_CC is None or regression_targets_MLO is None:
                 raise ValueError("regression_targets cannot be None")
-            loss_classifier, loss_box_reg = fastrcnn_loss1(class_logits, box_regression, labels, regression_targets)
-            losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
+            loss_classifier_CC, loss_box_reg_CC = fastrcnn_loss1(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
+            loss_classifier_MLO, loss_box_reg_MLO = fastrcnn_loss1(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
+            loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }
+            loss_MLO = {"loss_classifier": loss_classifier_MLO, "loss_box_reg": loss_box_reg_MLO}
         else:
-            boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
-            num_images = len(boxes)
+            boxes_CC, scores_CC, labels_CC = self.postprocess_detections(class_logits_CC, box_regression_CC, proposals_CC, image_shapes_CC)
+            boxes_MLO, scores_MLO, labels_MLO = self.postprocess_detections(class_logits_MLO, box_regression_MLO, proposals_MLO, image_shapes_MLO)
+            num_images = len(boxes_CC)
             for i in range(num_images):
-                result.append(
+                result_CC.append(
                     {
-                        "boxes": boxes[i],
-                        "labels": labels[i],
-                        "scores": scores[i],
+                        "boxes": boxes_CC[i],
+                        "labels": labels_CC[i],
+                        "scores": scores_CC[i],
+                    }
+                )
+            num_images = len(boxes_MLO)
+            for i in range(num_images):
+                result_MLO.append(
+                    {
+                        "boxes": boxes_MLO[i],
+                        "labels": labels_MLO[i],
+                        "scores": scores_MLO[i],
                     }
                 )
 
@@ -349,7 +373,7 @@ class Multi_roi_heads(RoIHeads):
                     r["keypoints_scores"] = kps
             losses.update(loss_keypoint)
 
-        return result, losses
+        return result_CC, result_MLO, loss_CC, loss_MLO
 
 # Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/custom_fast_rcnn.py#L113  # noqa
 # with slight modifications

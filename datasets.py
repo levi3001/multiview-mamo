@@ -482,14 +482,15 @@ class TwoviewDataset(Dataset):
             image_id_mass = (self.image_id['study_id']).apply(lambda i: i in set(finding['study_id']))
             self.image_id = self.image_id[image_id_mass].reset_index()
         self.study_id = self.image_id['study_id'].unique()
-        print(self.study_id)
+        print(len(self.study_id))
         self.annos = finding[['study_id','image_id','height', 'width', 'xmin', 'ymin', 'xmax', 'ymax', 'finding_categories','breast_birads']].reset_index()
 
 
     def load_image_and_labels(self, index,view = 'CC' ):
-        study_id= self.study_id['study_id'][index]
-        image_name = self.image_id[self.image_id['study_id']== study_id][ self.image_id['view_position']== view].values[0]
-        image_path = os.path.join(self.images_path, study_id+'/'+image_name+ '.dicom')
+        study_id= self.study_id[index]
+        image_name = self.image_id[self.image_id['study_id']== study_id]
+        image_name= image_name[image_name['view_position']== view]['image_id'].values[0]
+        image_path = os.path.join(self.images_path, str(study_id)+'/'+str(image_name)+ '.dicom')
 
         # Read the image.
         '''
@@ -695,4 +696,4 @@ class TwoviewDataset(Dataset):
         return image_CC, image_MLO, target_CC, target_MLO
 
     def __len__(self):
-        return len(self.study_id['study_id'])
+        return len(self.study_id)

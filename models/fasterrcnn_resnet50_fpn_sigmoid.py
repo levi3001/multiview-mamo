@@ -19,6 +19,7 @@ def create_model(num_classes, pretrained=True, coco_model=False):
         rpn_bg_iou_thresh=0.3,
         box_score_thresh=0,
         box_nms_thresh=0.1,
+        trainable_backbone_layers = 5,
     )
     model.transform = GeneralizedRCNNTransform(1400, 1700, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= (1400, 1700))
     out_channels = model.backbone.out_channels

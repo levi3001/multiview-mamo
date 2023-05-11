@@ -6,7 +6,7 @@ import torch
 import torchvision.models.detection.mask_rcnn
 from torch_utils import utils
 from torch_utils.coco_eval import CocoEvaluator
-from torch_utils.coco_utils import get_coco_api_from_dataset
+from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
 from utils.general import save_validation_results
 import numpy as np
 def train_one_epoch(
@@ -278,3 +278,65 @@ def train_one_epoch_multi(
         batch_loss_objectness_list, 
         batch_loss_rpn_list
     )
+    
+    
+@torch.inference_mode()
+def evaluate_multi(
+    model, 
+    data_loader, 
+    device, 
+    save_valid_preds=False,
+    out_dir=None,
+    classes=None,
+    colors=None
+):
+    n_threads = torch.get_num_threads()
+    # FIXME remove this and make paste_masks_in_image run on the GPU
+    torch.set_num_threads(1)
+    cpu_device = torch.device("cpu")
+    model.eval()
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    header = "Test:"
+
+    coco_CC, coco_MLO = get_coco_api_from_dataset_multi(data_loader.dataset)
+    iou_types = _get_iou_types(model)
+    coco_evaluator_CC = CocoEvaluator(coco_CC, iou_types)
+    coco_evaluator_MLO = CocoEvaluator(coco_MLO, iou_types)
+
+    counter = 0
+    for images_CC, images_MLO, targets_CC, targets_MLO in metric_logger.log_every(data_loader, 100, header):
+        counter += 1
+        images_CC = list(img.to(device) for img in images_CC)
+        images_MLO = list(img.to(device) for img in images_MLO)
+
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        model_time = time.time()
+        outputs_CC, outputs_MLO = model(images_CC, images_MLO)
+
+        outputs_CC = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_CC]
+        outputs_MLO = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_MLO]
+        model_time = time.time() - model_time
+
+        res_CC = {target["image_id"].item(): output for target, output in zip(targets_CC, outputs_CC)}
+        res_MLO = {target["image_id"].item(): output for target, output in zip(targets_MLO, outputs_MLO)}
+        evaluator_time = time.time()
+        coco_evaluator_CC.update(res_CC)
+        coco_evaluator_MLO.update(res_MLO)
+        evaluator_time = time.time() - evaluator_time
+        metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
+
+
+
+    # gather the stats from all processes
+    metric_logger.synchronize_between_processes()
+    print("Averaged stats:", metric_logger)
+    coco_evaluator_CC.synchronize_between_processes()
+    coco_evaluator_MLO.synchronize_between_processes()
+    # accumulate predictions from all images
+    coco_evaluator_CC.accumulate()
+    stats_CC = coco_evaluator_CC.summarize()
+    coco_evaluator_MLO.accumulate()
+    stats_MLO = coco_evaluator_MLO.summarize()
+    torch.set_num_threads(n_threads)
+    return stats_CC, stats_MLO
