@@ -16,7 +16,7 @@ from torch import nn, Tensor
 
 class CrossviewTransformer(nn.Module):
 
-    def __init__(self, d_model=512, nhead=8, num_encoder_layers=6,
+    def __init__(self, d_model=1024, nhead=8, num_encoder_layers=6,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False,
                  return_intermediate_dec=False):
@@ -25,8 +25,9 @@ class CrossviewTransformer(nn.Module):
 
         decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward,
                                                 dropout, activation, normalize_before)
-        decoder_norm = nn.LayerNorm(d_model)
-        self.decoder = TwoviewTransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm,
+        decoder_norm1 = nn.LayerNorm(d_model)
+        decoder_norm2 = nn.LayerNorm(d_model)
+        self.decoder = TwoviewTransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm1, decoder_norm2,
                                           return_intermediate=return_intermediate_dec)
 
         self._reset_parameters()
@@ -51,6 +52,7 @@ class TwoviewTransformerDecoder(nn.Module):
     def __init__(self, decoder_layer, num_layers, norm1=None, norm2 = None, return_intermediate=False):
         super().__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
+        
         self.num_layers = num_layers
         self.norm1 = norm1
         self.norm2 = norm2
@@ -65,8 +67,9 @@ class TwoviewTransformerDecoder(nn.Module):
                 CC_pos: Optional[Tensor] = None):
 
 
-
-        for layer_CC_MLO, layer_MLO_CC in zip(self.layers):
+        for i in range(self.num_layers):
+            layer_CC_MLO= self.layers[0][i]
+            layer_MLO_CC = self.layers[1][i]
             roi_CC = layer_CC_MLO(roi_CC, roi_MLO, tgt_mask=CC_mask,
                            memory_mask=MLO_mask,
                            tgt_key_padding_mask=CC_key_padding_mask,
@@ -82,7 +85,7 @@ class TwoviewTransformerDecoder(nn.Module):
             roi_CC = self.norm1(roi_CC)
             roi_MLO = self.norm2(roi_MLO)
 
-        return roi_CC.unsqueeze(0), roi_MLO.unsqueeze(0)
+        return roi_CC, roi_MLO
 
 
 
@@ -132,7 +135,7 @@ class TransformerDecoderLayer(nn.Module):
 
 
 def _get_clones(module, N):
-    return nn.ModuleList([copy.deepcopy(module) for i in range(N)]), nn.ModuleList([copy.deepcopy(module) for i in range(N)])
+    return nn.ModuleList([nn.ModuleList([copy.deepcopy(module) for i in range(N)]), nn.ModuleList([copy.deepcopy(module) for i in range(N)])])
 
 
 def build_transformer(args):

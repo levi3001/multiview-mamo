@@ -202,10 +202,10 @@ def return_fasterrcnn_regnet_y_400mf(
 
 
 def return_fasterrcnn_resnet50_fpn_sigmoid(
-    num_classes, pretrained=True, coco_model=False
+    num_classes,size= (1400,1700), pretrained=True, coco_model=False
 ):
     model = fasterrcnn_resnet50_fpn_sigmoid.create_model(
-        num_classes, pretrained=pretrained, coco_model=coco_model
+        num_classes, size=size, pretrained=pretrained, coco_model=coco_model
     )
     return model
 

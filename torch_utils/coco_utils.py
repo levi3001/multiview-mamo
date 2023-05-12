@@ -208,8 +208,8 @@ def convert_to_coco_api_multi(ds):
     categories_MLO =set()
     for img_idx in range(len(ds)):
         img_CC, img_MLO, targets_CC, targets_MLO = ds[img_idx]
-        update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
-        update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
+        ann_id_CC = update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
+        ann_id_MLO = update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
     dataset_CC["categories"] = [{"id": i} for i in sorted(categories_CC)]
     dataset_MLO["categories"] = [{"id": i} for i in sorted(categories_MLO)]
     coco_ds_CC.dataset = dataset_CC

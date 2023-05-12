@@ -22,17 +22,19 @@ def collate_fn(batch):
     """
     return tuple(zip(*batch))
 
-train_transform= T.Compose([
+def train_transform(size):
+    return T.Compose([
     #T.RandomHorizontalFlip(),
-    T.RandomResize([(1400, 1700)]),
+    T.RandomResize([size]),
     T.ToTensor(),
     #T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
 
 #train_transform = None
-valid_transform= T.Compose([
+def valid_transform(size):
+    return T.Compose([
     #T.RandomHorizontalFlip(),
-    T.RandomResize([(1400, 1700)]),
+    T.RandomResize([size]),
     T.ToTensor(),
     #T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 ])
@@ -44,20 +46,14 @@ def create_train_dataset(
     train_dir_labels, 
     img_size, 
     classes,
-    use_train_aug=False,
-    no_mosaic=False,
-    square_training=False
 ):
     train_dataset = CustomDataset2(
         train_dir_images, 
         train_dir_labels,
         img_size, 
         classes, 
-        train_transform,
-        use_train_aug=use_train_aug,
+        train_transform(img_size),
         train=True, 
-        no_mosaic=no_mosaic,
-        square_training=square_training
     )
     return train_dataset
 def create_valid_dataset(
@@ -65,17 +61,14 @@ def create_valid_dataset(
     train_dir_labels, 
     img_size, 
     classes,
-    square_training=False
 ):
     valid_dataset = CustomDataset2(
         train_dir_images, 
         train_dir_labels,
         img_size, 
         classes, 
-        valid_transform,
+        valid_transform(img_size),
         train=False, 
-        no_mosaic=True,
-        square_training=square_training
     )
     return valid_dataset
 
@@ -134,22 +127,15 @@ class CustomDataset2(Dataset):
         img_size, 
         classes, 
         transforms=None, 
-        use_train_aug=False,
         train=False, 
-        no_mosaic=False,
-        square_training=False
     ):
         self.transforms = transforms
-        self.use_train_aug = use_train_aug
         self.images_path = images_path
         self.finding_path = val_path+'/finding_annotations.csv'
         self.breast_level_path = val_path+'/breast-level_annotations.csv'
         self.img_size = img_size
         self.classes = classes
         self.train = train
-        self.no_mosaic = no_mosaic
-        self.square_training = square_training
-        self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.all_image_paths = []
         self.log_annot_issue_x = True
         self.log_annot_issue_y = True
@@ -329,18 +315,11 @@ class CustomDataset2(Dataset):
 
     def __getitem__(self, idx):
         # Capture the image name and the full image path.
-        if self.no_mosaic:
-            image, orig_boxes, boxes, \
-                labels, area, iscrowd, dims = self.load_image_and_labels(
-                index=idx
-            )
+        image, orig_boxes, boxes, \
+            labels, area, iscrowd, dims = self.load_image_and_labels(
+            index=idx
+        )
 
-        if self.train and not self.no_mosaic:
-            #while True:
-            image, boxes, labels, \
-                area, iscrowd, dims = self.load_cutmix_image_and_boxes(
-                idx, resize_factor=(self.img_size, self.img_size)
-            )
                 # Only needed if we don't allow training without target bounding boxes
                # if len(boxes) > 0:
                #     break
@@ -359,21 +338,13 @@ class CustomDataset2(Dataset):
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)
             
-        if self.use_train_aug: # Use train augmentation if argument is passed.
-            train_aug = get_train_aug()
-            sample = train_aug(image=image,
-                                     bboxes=target['boxes'],
-                                     labels=labels)
-            image = sample['image']
-            target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
-        else:
-            # sample = self.transforms(image=image,
-            #                          bboxes=target['boxes'],
-            #                          labels=labels)
-            image, target = self.transforms(image = image, target = target)
-            #image = sample['image']
-            #target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
-            #target = sample['target']
+        # sample = self.transforms(image=image,
+        #                          bboxes=target['boxes'],
+        #                          labels=labels)
+        image, target = self.transforms(image = image, target = target)
+        #image = sample['image']
+        #target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
+        #target = sample['target']
         # Fix to enable training without target bounding boxes,
         # see https://discuss.pytorch.org/t/fasterrcnn-images-with-no-objects-present-cause-an-error/117974/4
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
@@ -398,20 +369,14 @@ def create_train_dataset_multi(
     train_dir_labels, 
     img_size, 
     classes,
-    use_train_aug=False,
-    no_mosaic=False,
-    square_training=False
 ):
     train_dataset = TwoviewDataset(
         train_dir_images, 
         train_dir_labels,
         img_size, 
         classes, 
-        train_transform,
-        use_train_aug=use_train_aug,
+        train_transform(img_size),
         train=True, 
-        no_mosaic=no_mosaic,
-        square_training=square_training
     )
     return train_dataset
 def create_valid_dataset_multi(
@@ -419,17 +384,15 @@ def create_valid_dataset_multi(
     train_dir_labels, 
     img_size, 
     classes,
-    square_training=False
 ):
     valid_dataset = TwoviewDataset(
         train_dir_images, 
         train_dir_labels,
         img_size, 
         classes, 
-        valid_transform,
+        valid_transform(img_size),
         train=False, 
-        no_mosaic=True,
-        square_training=square_training
+
     )
     return valid_dataset
     
@@ -441,22 +404,15 @@ class TwoviewDataset(Dataset):
         img_size, 
         classes, 
         transforms=None, 
-        use_train_aug=False,
         train=False, 
-        no_mosaic=False,
-        square_training=False
     ):
         self.transforms = transforms
-        self.use_train_aug = use_train_aug
         self.images_path = images_path
         self.finding_path = val_path+'/finding_annotations.csv'
         self.breast_level_path = val_path+'/breast-level_annotations.csv'
         self.img_size = img_size
         self.classes = classes
         self.train = train
-        self.no_mosaic = no_mosaic
-        self.square_training = square_training
-        self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.all_image_paths = []
         self.log_annot_issue_x = True
         self.log_annot_issue_y = True
@@ -634,21 +590,11 @@ class TwoviewDataset(Dataset):
 
     def getitem_view(self,idx, view= 'CC'):
         # Capture the image name and the full image path.
-        if self.no_mosaic:
-            image, orig_boxes, boxes, \
-                labels, area, iscrowd, dims = self.load_image_and_labels(
-                 index=idx, view= view
-            )
+        image, orig_boxes, boxes, \
+            labels, area, iscrowd, dims = self.load_image_and_labels(
+                index=idx, view= view
+        )
 
-        if self.train and not self.no_mosaic:
-            #while True:
-            image, boxes, labels, \
-                area, iscrowd, dims = self.load_cutmix_image_and_boxes(
-                idx, resize_factor=(self.img_size, self.img_size)
-            )
-                # Only needed if we don't allow training without target bounding boxes
-               # if len(boxes) > 0:
-               #     break
         
         # visualize_mosaic_images(boxes, labels, image_resized, self.classes)
 
@@ -664,21 +610,13 @@ class TwoviewDataset(Dataset):
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.int64)
             
-        if self.use_train_aug: # Use train augmentation if argument is passed.
-            train_aug = get_train_aug()
-            sample = train_aug(image=image,
-                                     bboxes=target['boxes'],
-                                     labels=labels)
-            image = sample['image']
-            target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
-        else:
-            # sample = self.transforms(image=image,
-            #                          bboxes=target['boxes'],
-            #                          labels=labels)
-            image, target = self.transforms(image = image, target = target)
-            #image = sample['image']
-            #target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
-            #target = sample['target']
+        # sample = self.transforms(image=image,
+        #                          bboxes=target['boxes'],
+        #                          labels=labels)
+        image, target = self.transforms(image = image, target = target)
+        #image = sample['image']
+        #target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
+        #target = sample['target']
         # Fix to enable training without target bounding boxes,
         # see https://discuss.pytorch.org/t/fasterrcnn-images-with-no-objects-present-cause-an-error/117974/4
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):

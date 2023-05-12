@@ -97,7 +97,8 @@ def parse_opt():
     )
     parser.add_argument(
         '-ims', '--imgsz',
-        default=640, 
+        nargs='+',
+        default=(1400, 1700), 
         type=int, 
         help='image size to feed to the network'
     )
@@ -228,16 +229,13 @@ def main(args):
         TRAIN_DIR_LABELS,
         IMAGE_SIZE, 
         CLASSES,
-        use_train_aug=args['use_train_aug'],
-        no_mosaic=args['no_mosaic'],
-        square_training=args['square_training']
+
     )
     valid_dataset = create_valid_dataset(
         VALID_DIR_IMAGES, 
         VALID_DIR_LABELS, 
         IMAGE_SIZE, 
         CLASSES,
-        square_training=args['square_training']
     )
     print('Creating data loaders')
     if args['distributed']:
@@ -280,7 +278,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model[args['model']]
-        model = build_model(num_classes=NUM_CLASSES, pretrained=True, coco_model= False)
+        model = build_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, pretrained=True, coco_model= False)
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:
@@ -295,7 +293,7 @@ def main(args):
 
         # Build the new model with number of classes same as checkpoint.
         build_model = create_model[args['model']]
-        model = build_model(num_classes=old_classes)
+        model = build_model(num_classes=old_classes, size= IMAGE_SIZE)
         # Load weights.
         model.load_state_dict(ckpt_state_dict)
 
@@ -335,7 +333,7 @@ def main(args):
         )
     try:
         torchinfo.summary(
-            model, device=DEVICE, input_size=(BATCH_SIZE, 3, IMAGE_SIZE, IMAGE_SIZE)
+            model, device=DEVICE, input_size=(BATCH_SIZE, 3, IMAGE_SIZE[0], IMAGE_SIZE[1])
         )
     except:
         print(model)

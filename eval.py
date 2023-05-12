@@ -42,8 +42,8 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-ims', '--imgsz', 
-        default=640, 
-        type=int, 
+        default=(1400, 1700), 
+        type=tuple, 
         help='image size to feed to the network'
     )
     parser.add_argument(
@@ -101,9 +101,9 @@ if __name__ == '__main__':
     create_model = create_model[args['model']]
     if args['weights'] is None:
         try:
-            model, coco_model = create_model(num_classes=NUM_CLASSES, coco_model=True)
+            model, coco_model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
         except:
-            model = create_model(num_classes=NUM_CLASSES, coco_model=True)
+            model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
         if coco_model:
             COCO_91_CLASSES = data_configs['COCO_91_CLASSES']
             valid_dataset = create_valid_dataset(
@@ -116,7 +116,7 @@ if __name__ == '__main__':
 
     # Load weights.
     if args['weights'] is not None:
-        model = create_model(num_classes=NUM_CLASSES, coco_model=False)
+        model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
         valid_dataset = create_valid_dataset(

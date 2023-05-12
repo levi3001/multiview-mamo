@@ -96,8 +96,9 @@ def parse_opt():
     )
     parser.add_argument(
         '-ims', '--imgsz',
-        default=640, 
-        type=int, 
+        default=(1400, 1700), 
+        nargs='+',
+        type= int, 
         help='image size to feed to the network'
     )
     parser.add_argument(
@@ -220,23 +221,19 @@ def main(args):
     yaml_save(file_path=os.path.join(OUT_DIR, 'opt.yaml'), data=args)
 
     # Model configurations
-    IMAGE_SIZE = args['imgsz']
+    IMAGE_SIZE = tuple(args['imgsz'])
     
     train_dataset = create_train_dataset_multi(
         TRAIN_DIR_IMAGES, 
         TRAIN_DIR_LABELS,
         IMAGE_SIZE, 
         CLASSES,
-        use_train_aug=args['use_train_aug'],
-        no_mosaic=args['no_mosaic'],
-        square_training=args['square_training']
     )
     valid_dataset = create_valid_dataset_multi(
         VALID_DIR_IMAGES, 
         VALID_DIR_LABELS, 
         IMAGE_SIZE, 
         CLASSES,
-        square_training=args['square_training']
     )
     print('Creating data loaders')
     if args['distributed']:
@@ -283,7 +280,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model
-        model = build_model(num_classes=NUM_CLASSES, pretrained=True, coco_model= False)
+        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, pretrained=True, coco_model= False)
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:
@@ -405,8 +402,8 @@ def main(args):
             val_map_CC.append(stats_CC[0])
             val_map_05_MLO.append(stats_MLO[1])
             val_map_MLO.append(stats_MLO[0])
-            val_map.append(stats_CC[0]+stats_MLO[0])
-            val_map_05.append(stats_CC[1]+ stats_MLO[1])        
+            val_map.append((stats_CC[0]+stats_MLO[0])/2)
+            val_map_05.append((stats_CC[1]+ stats_MLO[1])/2)        
             # Save mAP plots.
             save_mAP(OUT_DIR, val_map_05, val_map)
             # Save mAP plot using TensorBoard.
@@ -484,10 +481,11 @@ def main(args):
 
 
 
-        coco_log(OUT_DIR, stats)
+        coco_log(OUT_DIR, stats_CC)
+        coco_log(OUT_DIR, stats_MLO)
         csv_log(
             OUT_DIR, 
-            stats, 
+            stats_CC, 
             epoch,
             train_loss_list,
             loss_cls_list,

@@ -21,6 +21,7 @@ def pad_sequence(sequences, batch_first=True, padding_value=0):
     Returns:
         A PyTorch tensor of shape (batch_size, max_sequence_length, *) or (max_sequence_length, batch_size, *)
     """
+    device= sequences[0].device
     # Find the maximum sequence length
     max_length = max([len(seq) for seq in sequences])
     # Pad the sequences with zeros
@@ -28,12 +29,16 @@ def pad_sequence(sequences, batch_first=True, padding_value=0):
 
     # Stack the padded sequences into a single tensor
     padded_tensor = torch.stack(padded_sequences, dim=0)
-
+    mask_seq = [len(seq) for seq in sequences]
+    mask= torch.zeros(padded_tensor.shape[:2], dtype = torch.bool)
+    for i in range(len(sequences)):
+        mask[i, mask_seq[i]:] = True
     # Transpose the tensor if batch_first is False
     if not batch_first:
         padded_tensor = padded_tensor.transpose(0, 1)
-
-    return padded_tensor
+    padded_tensor = padded_tensor.to(device)
+    mask = mask.to(device)
+    return padded_tensor, mask
 
 
 def fastrcnn_loss1(class_logits, box_regression, labels, regression_targets):
@@ -62,7 +67,6 @@ def fastrcnn_loss1(class_logits, box_regression, labels, regression_targets):
     labels_pos = labels[sampled_pos_inds_subset]
     N, num_classes = class_logits.shape
     box_regression = box_regression.reshape(N, box_regression.size(-1) // 4, 4)
-
     box_loss = F.smooth_l1_loss(
         box_regression[sampled_pos_inds_subset, labels_pos],
         regression_targets[sampled_pos_inds_subset],
@@ -118,7 +122,9 @@ class Multi_roi_heads(RoIHeads):
         
         
         self.crossview = CrossviewTransformer()
-        self.pos_encode = PositionEmbeddingSine(1024)
+        self.pos_encode = PositionEmbeddingSine(512)
+        
+        
     def postprocess_detections(
         self,
         class_logits,  # type: Tensor
@@ -225,25 +231,27 @@ class Multi_roi_heads(RoIHeads):
 
         box_features_CC = self.box_head(box_features_CC)
         box_features_MLO =self.box_head(box_features_MLO)
-        
         boxes_per_image_CC = [boxes_in_image.shape[0] for boxes_in_image in proposals_CC]
         boxes_per_image_MLO = [boxes_in_image.shape[0] for boxes_in_image in proposals_MLO]
         box_features_CC = box_features_CC.split(boxes_per_image_CC, 0)
         box_features_MLO = box_features_MLO.split(boxes_per_image_MLO, 0)
         
-        box_features_CC = pad_sequence(box_features_CC)
-        box_features_MLO = pad_sequence(box_features_MLO)
-        CC_key_padding_mask = box_features_CC == 0
-        MLO_key_padding_mask = box_features_MLO == 0
+        box_features_CC,  CC_key_padding_mask = pad_sequence(box_features_CC)
+        box_features_MLO,  MLO_key_padding_mask = pad_sequence(box_features_MLO)
+        
         CC_pos = self.pos_encode(proposals_CC)
         MLO_pos = self.pos_encode(proposals_MLO)
+        CC_pos, _ = pad_sequence(CC_pos)
+        MLO_pos, _ = pad_sequence(MLO_pos)
+        
+        #CC_key_padding_mask = box_features_CC == 0
+        #MLO_key_padding_mask = box_features_MLO == 0
+        
         box_features_CC, box_features_MLO = self.crossview(box_features_CC, box_features_MLO, CC_key_padding_mask, MLO_key_padding_mask,\
             CC_pos= CC_pos, MLO_pos= MLO_pos)
         
         box_features_CC = box_features_CC[~CC_key_padding_mask]
         box_features_MLO = box_features_MLO[~MLO_key_padding_mask]
-        print(box_features_CC)
-        
         class_logits_CC, box_regression_CC = self.box_predictor(box_features_CC)
         class_logits_MLO, box_regression_MLO = self.box_predictor(box_features_MLO)
 

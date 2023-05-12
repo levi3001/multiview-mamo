@@ -11,7 +11,7 @@ from typing import List, Tuple
 
     
     
-def create_model(num_classes, pretrained=True, coco_model=False):
+def create_model(num_classes, size=(1400,1700), pretrained=True, coco_model=False):
     # Load Faster RCNN pre-trained model
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
         #weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.DEFAULT,
@@ -21,7 +21,7 @@ def create_model(num_classes, pretrained=True, coco_model=False):
         box_nms_thresh=0.1,
         trainable_backbone_layers = 5,
     )
-    model.transform = GeneralizedRCNNTransform(1400, 1700, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= (1400, 1700))
+    model.transform = GeneralizedRCNNTransform(size[0], size[1], [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= size)
     out_channels = model.backbone.out_channels
     box_roi_pool=None
     box_head=None

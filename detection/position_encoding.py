@@ -21,13 +21,10 @@ class PositionEmbeddingSine(nn.Module):
         
 
     def forward(self, proposals):
-        print(proposals)
         boxes_per_image = [boxes_in_image.shape[0] for boxes_in_image in proposals]
         proposals = torch.cat(proposals, 0)
-        print(proposals.shape)
         y_embed = (proposals[:,1]+proposals[:,3])/2
         x_embed = (proposals[:,0]+proposals[:,2])/2
-        print(x_embed.shape)
         dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32, device=proposals.device)
         dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
 

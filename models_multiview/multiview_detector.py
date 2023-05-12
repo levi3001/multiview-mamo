@@ -56,7 +56,6 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
     def forward(self, image_CC, image_MLO, target_CC = None, target_MLO = None):
         image_CC, feat_CC, target_CC, original_image_sizes_CC = self.backbone_forward(image_CC, target_CC)
         image_MLO,  feat_MLO, target_MLO, original_image_sizes_MLO = self.backbone_forward(image_MLO, target_MLO)
-        print(image_CC)
         if isinstance(feat_CC, torch.Tensor):
             feat_CC = OrderedDict([("0", feat_CC)])
             feat_MLO = OrderedDict([("0", feat_MLO)])
@@ -75,7 +74,7 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
         losses_MLO.update(proposal_losses_MLO)
         return self.eager_outputs(losses_CC, losses_MLO, detections_CC, detections_MLO)
 
-def create_model(num_classes, pretrained=True, coco_model=False, **kwargs):
+def create_model(num_classes, size= (1400, 1700), pretrained=True, coco_model=False, **kwargs):
     # Load Faster RCNN pre-trained model
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
@@ -91,7 +90,7 @@ def create_model(num_classes, pretrained=True, coco_model=False, **kwargs):
     backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)
     
     model = Multiview_fasterrcnn(backbone = backbone, num_classes=num_classes)
-    model.transform = GeneralizedRCNNTransform(700, 850, [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= (700, 850))
+    model.transform = GeneralizedRCNNTransform( size[0], size[1], [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= size)
     out_channels = model.backbone.out_channels
     box_roi_pool=None
     box_head=None
