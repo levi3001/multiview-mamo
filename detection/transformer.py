@@ -70,22 +70,22 @@ class TwoviewTransformerDecoder(nn.Module):
         for i in range(self.num_layers):
             layer_CC_MLO= self.layers[0][i]
             layer_MLO_CC = self.layers[1][i]
-            roi_CC = layer_CC_MLO(roi_CC, roi_MLO, tgt_mask=CC_mask,
+            roi_CC1 = layer_CC_MLO(roi_CC, roi_MLO, tgt_mask=CC_mask,
                            memory_mask=MLO_mask,
                            tgt_key_padding_mask=CC_key_padding_mask,
                            memory_key_padding_mask=MLO_key_padding_mask,
                            pos=MLO_pos, query_pos=CC_pos)
-            roi_MLO = layer_MLO_CC(roi_MLO, roi_CC, tgt_mask=MLO_mask,
+            roi_MLO1 = layer_MLO_CC(roi_MLO, roi_CC, tgt_mask=MLO_mask,
                            memory_mask=CC_mask,
                            tgt_key_padding_mask=MLO_key_padding_mask,
                            memory_key_padding_mask=CC_key_padding_mask,
                            pos=CC_pos, query_pos=MLO_pos)
 
         if self.norm1 is not None:
-            roi_CC = self.norm1(roi_CC)
-            roi_MLO = self.norm2(roi_MLO)
+            roi_CC1 = self.norm1(roi_CC1)
+            roi_MLO1 = self.norm2(roi_MLO1)
 
-        return roi_CC, roi_MLO
+        return roi_CC1, roi_MLO1
 
 
 

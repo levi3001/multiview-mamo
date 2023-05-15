@@ -1,6 +1,6 @@
 import torchvision
 
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead
+from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead, FasterRCNN
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from detection.Custom_roi_heads import Custom_roi_heads
 from torchvision.ops import MultiScaleRoIAlign
@@ -8,20 +8,56 @@ from torch import nn as nn
 from torch import Tensor
 import torch
 from typing import List, Tuple
+from torchvision.ops import misc as misc_nn_ops
+from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers
+from torchvision.models.resnet import resnet50, ResNet50_Weights
+
 
     
-    
 def create_model(num_classes, size=(1400,1700), pretrained=True, coco_model=False):
-    # Load Faster RCNN pre-trained model
-    model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
-        #weights=torchvision.models.detection.FasterRCNN_ResNet50_FPN_Weights.DEFAULT,
-        rpn_fg_iou_thresh=0.5,
-        rpn_bg_iou_thresh=0.3,
-        box_score_thresh=0,
-        box_nms_thresh=0.1,
-        trainable_backbone_layers = 5,
-    )
-    model.transform = GeneralizedRCNNTransform(size[0], size[1], [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= size)
+    weights_backbone= ResNet50_Weights.IMAGENET1K_V1
+    weights_backbone = ResNet50_Weights.verify(weights_backbone)
+    weights_backbone = None
+
+
+    is_trained = weights_backbone is not None
+    trainable_backbone_layers=5
+    trainable_backbone_layers = _validate_trainable_layers(is_trained, trainable_backbone_layers, 5, 3)
+    norm_layer = nn.BatchNorm2d
+
+    backbone = resnet50(weights=weights_backbone, progress = True, norm_layer=norm_layer)
+    def get_layer(model, name):
+        layer = model
+        for attr in name.split("."):
+            layer = getattr(layer, attr)
+        return layer
+
+
+    def set_layer(model, name, layer):
+        try:
+            attrs, name = name.rsplit(".", 1)
+            model = get_layer(model, attrs)
+        except ValueError:
+            pass
+        setattr(model, name, layer)
+
+
+    for name, module in backbone.named_modules():
+        if isinstance(module, nn.BatchNorm2d):
+            # Get current bn layer
+            bn = get_layer(backbone, name)
+            # Create new gn layer
+            gn = nn.GroupNorm(1, bn.num_features)
+            # Assign gn
+            print("Swapping {} with {}".format(bn, gn))
+
+            set_layer(backbone, name, gn)
+    print(backbone)
+    
+    backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)
+    
+    model = FasterRCNN(backbone = backbone, num_classes=num_classes)
+    model.transform = GeneralizedRCNNTransform( size[0], size[1], [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= size)
     out_channels = model.backbone.out_channels
     box_roi_pool=None
     box_head=None
@@ -58,14 +94,7 @@ def create_model(num_classes, size=(1400,1700), pretrained=True, coco_model=Fals
             box_nms_thresh,
             box_detections_per_img,
     )
-    if coco_model: # Return the COCO pretrained model for COCO classes.
-        return model, coco_model
     
-    # Get the number of input features 
-    in_features = model.roi_heads.box_predictor.cls_score.in_features
-    # define a new head for the detector with required number of classes
-    model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes) 
-
     return model
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ USAGE:
 python eval.py --config data_configs/voc.yaml --weights outputs/training/fasterrcnn_convnext_small_voc_15e_noaug/best_model.pth --model fasterrcnn_convnext_small
 """
 from datasets import (
-    create_valid_dataset, create_valid_loader
+    create_valid_dataset_multi, create_valid_loader
 )
 from models.create_fasterrcnn_model import create_model
 from torch_utils import utils
@@ -106,12 +106,11 @@ if __name__ == '__main__':
             model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
         if coco_model:
             COCO_91_CLASSES = data_configs['COCO_91_CLASSES']
-            valid_dataset = create_valid_dataset(
+            valid_dataset = create_valid_dataset_multi(
                 VALID_DIR_IMAGES, 
                 VALID_DIR_LABELS, 
                 IMAGE_SIZE, 
-                COCO_91_CLASSES, 
-                square_training=args['square_training']
+                COCO_91_CLASSES
             )
 
     # Load weights.
@@ -119,7 +118,7 @@ if __name__ == '__main__':
         model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
-        valid_dataset = create_valid_dataset(
+        valid_dataset = create_valid_dataset_multi(
             VALID_DIR_IMAGES, 
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
@@ -147,34 +146,49 @@ if __name__ == '__main__':
         metric_logger = utils.MetricLogger(delimiter="  ")
         header = "Test:"
 
-        target = []
-        preds = []
+        target_CC = []
+        preds_CC = []
+        target_MLO = []
+        preds_MLO = []
         counter = 0
-        for images, targets in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
+        for images_CC, images_MLO, targets_CC, targets_MLO in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
             counter += 1
-            images = list(img.to(device) for img in images)
+            images_CC = list(image_CC.to(device) for image_CC in images_CC)
+            images_MLO = list(image_MLO.to(device) for image_MLO in images_MLO)
+            #images = torch.stack(images)
+            #print(images.shape)
+            #images = images.to(device)
+            targets_CC = [{k: v.to(device) for k, v in t.items()} for t in targets_CC]
+            targets_MLO = [{k: v.to(device) for k, v in t.items()} for t in targets_MLO]
 
             if torch.cuda.is_available():
                 torch.cuda.synchronize()
             model_time = time.time()
             with torch.no_grad():
-                outputs = model(images)
+                outputs_CC, outputs_MLO= model(images_CC, images_MLO, targets_CC, targets_MLO)
                 #print('out',outputs)
                 #print('tar',targets)
             #####################################
-            for i in range(len(images)):
-                true_dict = dict()
-                preds_dict = dict()
-                true_dict['boxes'] = targets[i]['boxes'].detach().cpu()
-                true_dict['labels'] = targets[i]['labels'].detach().cpu()
-                preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
-                preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
-                preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
-                preds.append(preds_dict)
-                target.append(true_dict)
-            #####################################
+            true_dict_CC = dict()
+            true_dict_MLO = dict()
+            preds_dict_CC = dict()
+            preds_dict_MLO = dict
+            
+            def pred(true_dict, preds_dict, targets, outputs, images, preds, target):
+                for i in range(len(images)):
 
-            outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+                    true_dict['boxes'] = targets[i]['boxes'].detach().cpu()
+                    true_dict['labels'] = targets[i]['labels'].detach().cpu()
+                    preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
+                    preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
+                    preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
+                    preds.append(preds_dict)
+                    target.append(true_dict)
+                #####################################
+            pred(true_dict_CC, preds_dict_CC, targets_CC, outputs_CC, images_CC, preds_CC, target_CC)
+            pred(true_dict_MLO, preds_dict_MLO, targets_MLO, outputs_MLO, images_MLO, preds_MLO, target_MLO)
+            outputs_CC = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_CC]
+            outputs_MLO = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_MLO]
         # gather the stats from all processes
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
@@ -182,10 +196,11 @@ if __name__ == '__main__':
         metric = froc.FROC(num_classes)
         #metric.update(preds, target)
         #metric_summary = metric.compute()
-        metric_summary = metric.compute(preds,target)
-        return metric_summary
+        metric_summary_CC = metric.compute(preds_CC,target_CC)
+        metric_summary_MLO = metric.compute(preds_MLO, target_MLO)
+        return metric_summary_CC, metric_summary_MLO
 
-    stats = evaluate(
+    stats_CC, stats_MLO = evaluate(
         model, 
         valid_loader, 
         device=DEVICE,
