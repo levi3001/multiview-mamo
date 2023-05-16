@@ -19,12 +19,12 @@ class CrossviewTransformer(nn.Module):
     def __init__(self, d_model=1024, nhead=8, num_encoder_layers=6,
                  num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False,
-                 return_intermediate_dec=False):
+                 return_intermediate_dec=False, use_self_attn = False):
         super().__init__()
-
+        self.use_self_attn =use_self_attn
 
         decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward,
-                                                dropout, activation, normalize_before)
+                                                dropout, activation, normalize_before, use_self_attn)
         decoder_norm1 = nn.LayerNorm(d_model)
         decoder_norm2 = nn.LayerNorm(d_model)
         self.decoder = TwoviewTransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm1, decoder_norm2,
@@ -93,14 +93,17 @@ class TwoviewTransformerDecoder(nn.Module):
 class TransformerDecoderLayer(nn.Module):
 
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
-                 activation="relu", normalize_before=False):
+                 activation="relu", normalize_before=False, use_self_attn =False):
         super().__init__()
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first= True)
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)
         self.linear2 = nn.Linear(dim_feedforward, d_model)
-
+        self.use_self_attn = use_self_attn
+        if self.use_self_attn:
+            self.self_attn =  nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+            self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
 
@@ -120,6 +123,15 @@ class TransformerDecoderLayer(nn.Module):
                      memory_key_padding_mask: Optional[Tensor] = None,
                      pos: Optional[Tensor] = None,
                      query_pos: Optional[Tensor] = None):
+        
+        if self.use_self_attn:
+            q = k = self.with_pos_embed(tgt, query_pos)
+            tgt2 = self.self_attn(q, k, value=tgt, attn_mask=tgt_mask,
+                                key_padding_mask=tgt_key_padding_mask)[0]
+            tgt = tgt + self.dropout1(tgt2)
+            tgt = self.norm1(tgt)
+        
+        
         tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
                                    key=self.with_pos_embed(memory, pos),
                                    value=memory, attn_mask=memory_mask,

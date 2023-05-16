@@ -7,7 +7,7 @@ python eval.py --config data_configs/voc.yaml --weights outputs/training/fasterr
 from datasets import (
     create_valid_dataset_multi, create_valid_loader
 )
-from models.create_fasterrcnn_model import create_model
+from models_multiview.multiview_detector import create_model
 from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from pprint import pprint
@@ -98,7 +98,6 @@ if __name__ == '__main__':
     IMAGE_SIZE = args['imgsz']
 
     # Load the pretrained model
-    create_model = create_model[args['model']]
     if args['weights'] is None:
         try:
             model, coco_model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
@@ -172,7 +171,7 @@ if __name__ == '__main__':
             true_dict_CC = dict()
             true_dict_MLO = dict()
             preds_dict_CC = dict()
-            preds_dict_MLO = dict
+            preds_dict_MLO = dict()
             
             def pred(true_dict, preds_dict, targets, outputs, images, preds, target):
                 for i in range(len(images)):

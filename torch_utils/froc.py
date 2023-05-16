@@ -185,12 +185,14 @@ def calc_scores(stats, lls_accuracy, nlls_per_image):
 
     return lls_accuracy, nlls_per_image
 class FROC():
-    def __init__(self, num_classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0, n_sample_points= 10000,plot_title='FROC curve'):
+    def __init__(self, num_classes, classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0, n_sample_points= 10000,plot_title='FROC curve', view = 'CC'):
         self.threshold = threshold 
         self.iou_thres = iou_thres
         self.n_sample_points = n_sample_points
         self.plot_title = plot_title
         self.num_classes = num_classes
+        self.classes = classes
+        self.view =view
     def compute(self, preds, targets):
         lls_accuracy = {}
         nlls_per_image = {}
@@ -222,14 +224,11 @@ class FROC():
                 first2= False
         #print(lls_accuracy, nlls_per_image)
         if self.plot_title:
-            fig, ax = plt.subplots(figsize=[27, 18])
-            #ins = ax.inset_axes([0.55, 0.05, 0.45, 0.4])
+            fig, ax = plt.subplots(figsize=[20, 10])
             ax.set_xticks(
-                [0.1, 1.0, 2.0, 3.0, 4.0], [
-                    0.1, 1.0, 2.0, 3.0, 4.0,
-                ], fontsize=30,
+                self.threshold, self.threshold, fontsize=30,
             )
-
+        marker = ['.--', '*--']
 
         for category_id in lls_accuracy:
             lls = lls_accuracy[category_id]
@@ -238,8 +237,8 @@ class FROC():
                 ax.plot(
                     nlls,
                     lls,
-                    'x--',
-                    label=category_id ,
+                    marker[category_id-1],
+                    label=self.classes[category_id] ,
                 )
             x= []
             y= []
@@ -249,5 +248,8 @@ class FROC():
                     y.append(lls[i])
             print(len(x), len(y))
             print(np.interp([0.5,1.0,2.0,4.0], x[::-1], y[::-1]))
-        plt.legend()
-        plt.savefig('result.png')
+        ax.legend(loc = 'best', fontsize = 30)
+        ax.set_title(self.plot_title)
+        ax.set_xlabel('False positive per image (FPPI)')
+        ax.set_ylabel('Recall')
+        plt.savefig(f'result_{self.view}.png')

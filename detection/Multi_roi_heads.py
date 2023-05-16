@@ -92,6 +92,8 @@ class Multi_roi_heads(RoIHeads):
         score_thresh,
         nms_thresh,
         detections_per_img,
+        # transformer
+        use_self_attn,
         # Mask
         mask_roi_pool=None,
         mask_head=None,
@@ -121,7 +123,7 @@ class Multi_roi_heads(RoIHeads):
         keypoint_predictor=None)
         
         
-        self.crossview = CrossviewTransformer()
+        self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
         self.pos_encode = PositionEmbeddingSine(512)
         
         

@@ -179,7 +179,7 @@ if __name__ == '__main__':
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        metric = froc.FROC(num_classes)
+        metric = froc.FROC(num_classes, CLASSES)
         #metric.update(preds, target)
         #metric_summary = metric.compute()
         metric_summary = metric.compute(preds,target)

@@ -181,7 +181,11 @@ def parse_opt():
         type=int ,
         help='golabl seed for training'
     )
-
+    parser.add_argument(
+        '--use_self_attn',
+        dest='use self attention',
+        action='store_true',
+    )
     args = vars(parser.parse_args())
     return args
 
@@ -295,7 +299,7 @@ def main(args):
 
         # Build the new model with number of classes same as checkpoint.
         build_model = create_model
-        model = build_model(num_classes=old_classes)
+        model = build_model(num_classes=old_classes, use_self_attn= args['use_self_attn'])
         # Load weights.
         model.load_state_dict(ckpt_state_dict)
 
