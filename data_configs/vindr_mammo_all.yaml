@@ -1,0 +1,24 @@
+# Images and labels direcotry should be relative to train.py
+TRAIN_DIR_IMAGES: ../VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images/
+TRAIN_DIR_LABELS: ../VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/
+VALID_DIR_IMAGES: ../VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images/
+VALID_DIR_LABELS: ../VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/
+# Class names.
+CLASSES: [
+    '__background__',
+    'Mass',
+    'Suspicious Calcification', 
+    'Focal Asymmetry', 
+    'Architectural Distortion', 
+    'Asymmetry',
+    'Suspicious Lymph Node', 
+    'Skin Thickening', 
+    'Suspicious Calcification', 
+    'Focal Asymmetry'
+]
+
+# Number of classes (object classes + 1 for background class in Faster RCNN).
+NC: 10
+
+# Whether to save the predictions of the validation set while training.
+SAVE_VALID_PREDICTION_IMAGES: True
