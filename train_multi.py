@@ -114,20 +114,6 @@ def parse_opt():
         help='visualize transformed images fed to the network'
     )
     parser.add_argument(
-        '-nm', '--no-mosaic', 
-        dest='no_mosaic', 
-        action='store_true',
-        help='pass this to not to use mosaic augmentation'
-    )
-    parser.add_argument(
-        '-uta', '--use-train-aug', 
-        dest='use_train_aug', 
-        action='store_true',
-        help='whether to use train augmentation, uses some advanced \
-            augmentation that may make training difficult when used \
-            with mosaic'
-    )
-    parser.add_argument(
         '-ca', '--cosine-annealing', 
         dest='cosine_annealing', 
         action='store_true',
@@ -148,15 +134,6 @@ def parse_opt():
             and also loads the otpimizer state dictionary'
     )
     parser.add_argument(
-        '-st', '--square-training',
-        dest='square_training',
-        action='store_true',
-        help='Resize images to square shape instead of aspect ratio resizing \
-              for single image training. For mosaic training, this resizes \
-              single images to square shape first then puts them on a \
-              square canvas.'
-    )
-    parser.add_argument(
         '--world-size', 
         default=1, 
         type=int, 
@@ -170,22 +147,23 @@ def parse_opt():
     )
 
     parser.add_argument(
-        '-dw', '--disable-wandb',
-        dest="disable_wandb",
-        action='store_true',
-        help='whether to use the wandb'
-    )
-    parser.add_argument(
         '--seed',
         default=0,
         type=int ,
         help='golabl seed for training'
     )
     parser.add_argument(
-        '--use_self_attn',
-        dest='use self attention',
+        '--use-self-attn',
+        dest='use_self_attn',
         action='store_true',
     )
+    
+    parser.add_argument(
+        '--norm', 
+        default=None,
+        help='normalization type'
+    )
+
     args = vars(parser.parse_args())
     return args
 
@@ -193,9 +171,6 @@ def main(args):
     # Initialize distributed mode.
     utils.init_distributed_mode(args)
 
-    # Initialize W&B with project name.
-    if not args['disable_wandb']:
-        wandb_init(name=args['name'])
     # Load the data configurations
     with open(args['data']) as file:
         data_configs = yaml.safe_load(file)
@@ -284,7 +259,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model
-        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, pretrained=True, coco_model= False)
+        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'])
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:
@@ -498,20 +473,6 @@ def main(args):
             loss_rpn_list
         )
 
-        # WandB logging.
-        if not args['disable_wandb']:
-            wandb_log(
-                train_loss_hist.value,
-                batch_loss_list,
-                loss_cls_list,
-                loss_box_reg_list,
-                loss_objectness_list,
-                loss_rpn_list,
-                stats[1],
-                stats[0],
-                val_pred_image,
-                IMAGE_SIZE
-            )
 
         # Save the current epoch model state. This can be used 
         # to resume training. It saves model state dict, number of
@@ -541,9 +502,6 @@ def main(args):
             args['model']
         )
     
-    # Save models to Weights&Biases.
-    if not args['disable_wandb']:
-        wandb_save_model(OUT_DIR)
 
 
 if __name__ == '__main__':

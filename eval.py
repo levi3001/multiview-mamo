@@ -66,14 +66,11 @@ if __name__ == '__main__':
         action='store_true',
         help='show class-wise mAP'
     )
+    
     parser.add_argument(
-        '-st', '--square-training',
-        dest='square_training',
-        action='store_true',
-        help='Resize images to square shape instead of aspect ratio resizing \
-              for single image training. For mosaic training, this resizes \
-              single images to square shape first then puts them on a \
-              square canvas.'
+        '--norm', 
+        default=None,
+        help='normalization type'
     )
     args = vars(parser.parse_args())
 
@@ -101,22 +98,13 @@ if __name__ == '__main__':
     create_model = create_model[args['model']]
     if args['weights'] is None:
         try:
-            model, coco_model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
+            model, coco_model = create_model(num_classes=NUM_CLASSES, norm = args['norm'],  size= IMAGE_SIZE, coco_model=True)
         except:
-            model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
-        if coco_model:
-            COCO_91_CLASSES = data_configs['COCO_91_CLASSES']
-            valid_dataset = create_valid_dataset(
-                VALID_DIR_IMAGES, 
-                VALID_DIR_LABELS, 
-                IMAGE_SIZE, 
-                COCO_91_CLASSES, 
-                square_training=args['square_training']
-            )
+            model = create_model(num_classes=NUM_CLASSES, norm = args['norm'], size= IMAGE_SIZE, coco_model=True)
 
     # Load weights.
     if args['weights'] is not None:
-        model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=False)
+        model = create_model(num_classes=NUM_CLASSES, norm= args['norm'], size= IMAGE_SIZE, coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
         valid_dataset = create_valid_dataset(

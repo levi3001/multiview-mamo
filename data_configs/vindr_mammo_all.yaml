@@ -8,17 +8,15 @@ CLASSES: [
     '__background__',
     'Mass',
     'Suspicious Calcification', 
-    'Focal Asymmetry', 
-    'Architectural Distortion', 
     'Asymmetry',
-    'Suspicious Lymph Node', 
-    'Skin Thickening', 
-    'Suspicious Calcification', 
-    'Focal Asymmetry'
+    'Focal Asymmetry', 
+    'Architectural Distortion',
+    'Other'
+
 ]
 
 # Number of classes (object classes + 1 for background class in Faster RCNN).
-NC: 10
+NC: 7
 
 # Whether to save the predictions of the validation set while training.
 SAVE_VALID_PREDICTION_IMAGES: True

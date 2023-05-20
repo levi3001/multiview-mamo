@@ -166,11 +166,14 @@ def calc_scores(stats, lls_accuracy, nlls_per_image):
             )
         else:
             lls_accuracy[category_id] = []
-            lls_accuracy[category_id].append(
-                stats[category_id]['LL'] /
-                stats[category_id]['n_lesions'],
-            )
-
+            try:
+                lls_accuracy[category_id].append(
+                    stats[category_id]['LL'] /
+                    stats[category_id]['n_lesions'],
+                )
+            except:
+                print(category_id)
+                raise Exception()
         if nlls_per_image.get(category_id, None):
             nlls_per_image[category_id].append(
                 stats[category_id]['NL'] /
@@ -228,7 +231,7 @@ class FROC():
             ax.set_xticks(
                 self.threshold, self.threshold, fontsize=30,
             )
-        marker = ['.--', '*--']
+        marker = ['*--']
 
         for category_id in lls_accuracy:
             lls = lls_accuracy[category_id]
@@ -237,7 +240,7 @@ class FROC():
                 ax.plot(
                     nlls,
                     lls,
-                    marker[category_id-1],
+                    marker[0],
                     label=self.classes[category_id] ,
                 )
             x= []

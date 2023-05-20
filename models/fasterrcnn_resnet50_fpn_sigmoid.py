@@ -40,7 +40,7 @@ def set_layer(model, name, layer):
         pass
     setattr(model, name, layer)
     
-def create_model(num_classes, size=(1400,1700), pretrained=True, coco_model=False):
+def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False):
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
     #weights_backbone = None
@@ -49,23 +49,32 @@ def create_model(num_classes, size=(1400,1700), pretrained=True, coco_model=Fals
     is_trained = weights_backbone is not None
     trainable_backbone_layers=5
     trainable_backbone_layers = _validate_trainable_layers(is_trained, trainable_backbone_layers, 5, 3)
-    norm_layer = misc_nn_ops.FrozenBatchNorm2d
-
+    if norm == None:
+        norm_layer = misc_nn_ops.FrozenBatchNorm2d
+    else:
+        norm_layer = nn.BatchNorm2d
     backbone = resnet50(weights=weights_backbone, progress = True, norm_layer=norm_layer)
 
 
-
-    # for name, module in backbone.named_modules():
-    #     if isinstance(module, nn.BatchNorm2d):
-    #         # Get current bn layer
-    #         bn = get_layer(backbone, name)
-    #         # Create new gn layer
-    #         ln = LayerNorm2d(bn.num_features)
-    #         #gn = nn.GroupNorm(1, bn.num_features)
-    #         # Assign gn
-    #         print("Swapping {} with {}".format(bn, ln))
-
-    #         set_layer(backbone, name, ln)
+    if norm == 'ln' or norm =='gn':
+        for name, module in backbone.named_modules():
+            if isinstance(module, nn.BatchNorm2d):
+                # Get current bn layer
+                bn = get_layer(backbone, name)
+                
+                
+                if norm == 'ln':
+                    # Create new ln layer
+                    ln = LayerNorm2d(bn.num_features)
+                    # Assign mn
+                    print("Swapping {} with {}".format(bn, ln))
+                    set_layer(backbone, name, ln)
+                elif norm =='gn':
+                    # Create new gn layer
+                    gn = nn.GroupNorm(1, bn.num_features)
+                    # Assign mn
+                    print("Swapping {} with {}".format(bn, gn))
+                    set_layer(backbone, name, gn)
     print(backbone)
     
     backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)

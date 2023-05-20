@@ -33,7 +33,6 @@ def train_transform(size):
 #train_transform = None
 def valid_transform(size):
     return T.Compose([
-    #T.RandomHorizontalFlip(),
     T.RandomResize([size]),
     T.ToTensor(),
     #T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -119,6 +118,12 @@ def read_xray(path, voi_lut = True, fix_monochrome = True):
         
     return data
 
+def check_intersect(a,b):
+    for i in a:
+        if i in b:
+            return True 
+    return False
+
 class CustomDataset2(Dataset):
     def __init__(
         self, 
@@ -147,8 +152,10 @@ class CustomDataset2(Dataset):
         breast_level = pd.read_csv(self.breast_level_path)
         finding= finding[finding['laterality'] == lat ]
         finding = finding[finding['view_position'] ==view]
-        finding_mass= (finding['finding_categories']).apply(lambda i: 'Mass' in i or 'Suspicious Calcification' in i)
+        print(finding['finding_categories'].unique())
+        finding_mass= (finding['finding_categories']).apply(lambda i: 'No Finding' not in i)
         finding = finding[finding_mass]
+        
         breast_level = breast_level[breast_level['laterality'] == lat]
         breast_level = breast_level[breast_level['view_position'] ==view]
         if self.train:
@@ -165,25 +172,21 @@ class CustomDataset2(Dataset):
             self.image_id = self.image_id[image_id_mass].reset_index()
         self.annos = finding[['study_id','image_id','height', 'width', 'xmin', 'ymin', 'xmax', 'ymax', 'finding_categories','breast_birads']].reset_index()
 
-
+        for labels in self.classes:
+            print(labels)
+            finding_mass= (self.annos['finding_categories']).apply(lambda i: labels in eval(i))
+            print(self.annos[finding_mass])
+            
+            
+            
     def load_image_and_labels(self, index):
         image_name = self.image_id['image_id'][index]
         study_id= self.image_id['study_id'][index]
         image_path = os.path.join(self.images_path, study_id+'/'+image_name+ '.dicom')
 
         # Read the image.
-        '''
-        ds= pydicom.dcmread(image_path)
-        image = ds.pixel_array
-        image = image/image.max()
-        image = image.astype('float32')
-        '''
         image = read_xray(image_path)
         # Convert BGR to RGB color format.
-        #print(image.dtype)
-        #image_resized = self.resize(image, square=self.square_training)
-        #image_resized /= image_resized.max()
-        
         # Capture the corresponding XML file for getting the annotations.
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
         #print(anno)
@@ -202,10 +205,11 @@ class CustomDataset2(Dataset):
                 # else:
                 #     labels.append(self.classes.index('__background__'))
             for cate in eval(anno['finding_categories'][i]):
-                if cate =='Mass' or cate =='Suspicious Calcification':
+                if cate in self.classes:
                     labels.append(self.classes.index(cate))
                 else:
-                    continue
+                    #continue
+                    labels.append(self.classes.index('Other'))
             # xmin = left corner x-coordinates
                 xmin = anno['xmin'][i]
                 # xmax = right corner x-coordinates
@@ -320,11 +324,7 @@ class CustomDataset2(Dataset):
             index=idx
         )
 
-                # Only needed if we don't allow training without target bounding boxes
-               # if len(boxes) > 0:
-               #     break
-        
-        # visualize_mosaic_images(boxes, labels, image_resized, self.classes)
+
 
         # Prepare the final `target` dictionary.
         image = Image.fromarray(image)
@@ -338,10 +338,8 @@ class CustomDataset2(Dataset):
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)
             
-        # sample = self.transforms(image=image,
-        #                          bboxes=target['boxes'],
-        #                          labels=labels)
         image, target = self.transforms(image = image, target = target)
+
         #image = sample['image']
         #target['boxes'] = torch.Tensor(sample['bboxes']).to(torch.int64)
         #target = sample['target']
@@ -423,7 +421,7 @@ class TwoviewDataset(Dataset):
         finding = pd.read_csv(self.finding_path)
         breast_level = pd.read_csv(self.breast_level_path)
         finding= finding[finding['laterality'] == lat ]
-        finding_mass= (finding['finding_categories']).apply(lambda i: 'Mass' in i or 'Suspicious Calcification' in i)
+        finding_mass= (finding['finding_categories']).apply(lambda i: 'No Finding' not in i)
         finding = finding[finding_mass]
         breast_level = breast_level[breast_level['laterality'] == lat]
         if self.train:
@@ -449,17 +447,8 @@ class TwoviewDataset(Dataset):
         image_path = os.path.join(self.images_path, str(study_id)+'/'+str(image_name)+ '.dicom')
 
         # Read the image.
-        '''
-        ds= pydicom.dcmread(image_path)
-        image = ds.pixel_array
-        image = image/image.max()
-        image = image.astype('float32')
-        '''
         image = read_xray(image_path)
         # Convert BGR to RGB color format.
-        #print(image.dtype)
-        #image_resized = self.resize(image, square=self.square_training)
-        #image_resized /= image_resized.max()
         
         # Capture the corresponding XML file for getting the annotations.
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
@@ -479,10 +468,11 @@ class TwoviewDataset(Dataset):
                 # else:
                 #     labels.append(self.classes.index('__background__'))
             for cate in eval(anno['finding_categories'][i]):
-                if cate =='Mass' or cate =='Suspicious Calcification':
+                if cate in self.classes:
                     labels.append(self.classes.index(cate))
                 else:
-                    continue
+                    #continue
+                    labels.append(self.classes.index('Other'))
                 # xmin = left corner x-coordinates
                 xmin = anno['xmin'][i]
                 # xmax = right corner x-coordinates

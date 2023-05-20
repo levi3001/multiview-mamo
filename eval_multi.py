@@ -67,14 +67,11 @@ if __name__ == '__main__':
         help='show class-wise mAP'
     )
     parser.add_argument(
-        '-st', '--square-training',
-        dest='square_training',
-        action='store_true',
-        help='Resize images to square shape instead of aspect ratio resizing \
-              for single image training. For mosaic training, this resizes \
-              single images to square shape first then puts them on a \
-              square canvas.'
+        '--norm', 
+        default=None,
+        help='normalization type'
     )
+    
     args = vars(parser.parse_args())
 
     # Load the data configurations
@@ -103,18 +100,11 @@ if __name__ == '__main__':
             model, coco_model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
         except:
             model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
-        if coco_model:
-            COCO_91_CLASSES = data_configs['COCO_91_CLASSES']
-            valid_dataset = create_valid_dataset_multi(
-                VALID_DIR_IMAGES, 
-                VALID_DIR_LABELS, 
-                IMAGE_SIZE, 
-                COCO_91_CLASSES
-            )
+
 
     # Load weights.
     if args['weights'] is not None:
-        model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=False)
+        model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE,norm = args['norm'], coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
         valid_dataset = create_valid_dataset_multi(
@@ -192,7 +182,7 @@ if __name__ == '__main__':
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        metric = froc.FROC(num_classes)
+        metric = froc.FROC(num_classes, CLASSES)
         #metric.update(preds, target)
         #metric_summary = metric.compute()
         metric_summary_CC = metric.compute(preds_CC,target_CC)
