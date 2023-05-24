@@ -184,7 +184,7 @@ if __name__ == '__main__':
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        preds = preds_CC.cooncat(preds_MLO)
+        preds = preds_CC.concat(preds_MLO)
         target= target_CC.concat(target_MLO)
         # metric1 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve CC',view= 'CC')
         # #metric.update(preds, target)
@@ -194,6 +194,8 @@ if __name__ == '__main__':
         # metric_summary_MLO = metric2.compute(preds_MLO, target_MLO)
         # return metric_summary_CC, metric_summary_MLO
         metric = froc.FROC(num_classes, CLASSES, threshold= [0.25, 0.5, 1,2,4], plot_title= 'FROC curve all',view = 'all')
+        metric_summary =metric.compute(preds, target)
+        return metric_summary
     stats = evaluate(
         model, 
         valid_loader, 
