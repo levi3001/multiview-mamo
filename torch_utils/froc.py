@@ -140,18 +140,22 @@ def update_stats(
                         )
                         #print('iou_score', iou_score)
                         if iou_score > iou_thres:
-                            cost_matrix[gt_ind, pr_ind] = iou_score / (
-                                np.random.uniform(0, 1) / 1e6
-                            )
-
+                            # cost_matrix[gt_ind, pr_ind] = iou_score / (
+                            #     np.random.uniform(0, 1) / 1e6
+                            # )
+                            cost_matrix[gt_ind, pr_ind]= iou_score/1e6
                 row_ind, col_ind = linear_sum_assignment(
                     cost_matrix,
                 )  # Hungarian-matching
                 # print('row_ind',row_ind)
                 # print('n_pr',n_pr)
                 # print('col_ind',col_ind)
-                n_true_positives = len(row_ind)
-                n_false_positives = max(n_pr - len(col_ind), 0)
+                count=0
+                for idx, r in enumerate(row_ind):
+                    if cost_matrix[row_ind[idx], col_ind[idx]]<1e-6:
+                        count+=1
+                n_true_positives = count
+                n_false_positives = max(n_pr - count, 0)
 
                 stats[cat]['LL'] += n_true_positives
                 stats[cat]['NL'] += n_false_positives
@@ -166,14 +170,10 @@ def calc_scores(stats, lls_accuracy, nlls_per_image):
             )
         else:
             lls_accuracy[category_id] = []
-            try:
-                lls_accuracy[category_id].append(
-                    stats[category_id]['LL'] /
-                    stats[category_id]['n_lesions'],
-                )
-            except:
-                print(category_id)
-                raise Exception()
+            lls_accuracy[category_id].append(
+                stats[category_id]['LL'] /
+                stats[category_id]['n_lesions'],
+            )
         if nlls_per_image.get(category_id, None):
             nlls_per_image[category_id].append(
                 stats[category_id]['NL'] /
@@ -188,7 +188,7 @@ def calc_scores(stats, lls_accuracy, nlls_per_image):
 
     return lls_accuracy, nlls_per_image
 class FROC():
-    def __init__(self, num_classes, classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0, n_sample_points= 10000,plot_title='FROC curve', view = 'CC'):
+    def __init__(self, num_classes, classes, threshold =[0.5,1.0,2.0,3.0,4.0], iou_thres= 0.2, n_sample_points= 10000,plot_title='FROC curve CC', view = 'CC'):
         self.threshold = threshold 
         self.iou_thres = iou_thres
         self.n_sample_points = n_sample_points
@@ -203,8 +203,7 @@ class FROC():
         thres_list2 = np.linspace(0,1,1000)
         thres_list = np.append(thres_list, thres_list2[1:])
         print(thres_list)
-        first1= True
-        first2= True
+        first = np.ones([self.num_classes],dtype= bool)
         for score_thres in tqdm(
                 thres_list
         ):
@@ -217,21 +216,17 @@ class FROC():
                 stats, lls_accuracy,
                 nlls_per_image,
             )
-            
-            if nlls_per_image[1][-1] <1 and first1:
-                print(1, score_thres)
-                first1 =False
-            
-            if nlls_per_image[2][-1] <1 and first2:
-                print(2, score_thres)
-                first2= False
+            for k in range(1,self.num_classes):
+                if nlls_per_image[k][-1] <1 and first[k]:
+                    print(k, score_thres)
+                    first[k]=False
         #print(lls_accuracy, nlls_per_image)
         if self.plot_title:
-            fig, ax = plt.subplots(figsize=[20, 10])
+            fig, ax = plt.subplots(figsize=[15, 10])
             ax.set_xticks(
-                self.threshold, self.threshold, fontsize=30,
+                self.threshold, self.threshold, fontsize=20,
             )
-        marker = ['*--']
+        marker = [None,'*--','.--','+--','o--','>--', '<--']
 
         for category_id in lls_accuracy:
             lls = lls_accuracy[category_id]
@@ -240,7 +235,7 @@ class FROC():
                 ax.plot(
                     nlls,
                     lls,
-                    marker[0],
+                    marker[category_id],
                     label=self.classes[category_id] ,
                 )
             x= []
@@ -250,9 +245,10 @@ class FROC():
                     x.append(nlls[i])
                     y.append(lls[i])
             print(len(x), len(y))
-            print(np.interp([0.5,1.0,2.0,4.0], x[::-1], y[::-1]))
-        ax.legend(loc = 'best', fontsize = 30)
-        ax.set_title(self.plot_title)
-        ax.set_xlabel('False positive per image (FPPI)')
-        ax.set_ylabel('Recall')
+            print(self.classes[category_id], np.interp( self.threshold, x[::-1], y[::-1]))
+        ax.legend(loc = 'best', fontsize = 20)
+        ax.set_title(self.plot_title, fontsize=40)
+        ax.set_xlabel('False positive per image (FPPI)', fontsize=30)
+        ax.set_ylabel('Recall', fontsize=30)
+        plt.xlim([0,5])
         plt.savefig(f'result_{self.view}.png')

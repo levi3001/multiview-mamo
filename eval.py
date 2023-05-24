@@ -42,8 +42,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-ims', '--imgsz', 
+        nargs='+',
         default=(1400, 1700), 
-        type=tuple, 
+        type=int, 
         help='image size to feed to the network'
     )
     parser.add_argument(
@@ -167,7 +168,7 @@ if __name__ == '__main__':
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        metric = froc.FROC(num_classes, CLASSES)
+        metric = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], view ='all')
         #metric.update(preds, target)
         #metric_summary = metric.compute()
         metric_summary = metric.compute(preds,target)

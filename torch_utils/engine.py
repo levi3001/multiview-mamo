@@ -139,7 +139,7 @@ def evaluate(
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
     counter = 0
-    for images, targets in metric_logger.log_every(data_loader, 100, header):
+    for images, targets in metric_logger.log_every(data_loader, 500, header):
         counter += 1
         images = list(img.to(device) for img in images)
 

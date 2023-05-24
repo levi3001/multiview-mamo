@@ -13,7 +13,7 @@ from torchvision.models.resnet import resnet50, ResNet50_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import MultiScaleRoIAlign
-
+import torch.nn.functional as F
 
 
 class LayerNorm2d(nn.LayerNorm):

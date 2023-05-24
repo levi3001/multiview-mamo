@@ -362,10 +362,10 @@ def main(args):
             DEVICE, 
             epoch, 
             train_loss_hist,
-            print_freq=100,
+            print_freq=500,
             scheduler=scheduler
         )
-        if epoch%5 ==0:
+        if epoch%10 ==0:
             stats, val_pred_image = evaluate(
                 model, 
                 valid_loader, 
@@ -495,7 +495,6 @@ def main(args):
             args['model']
         )
     
-
 
 
 if __name__ == '__main__':

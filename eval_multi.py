@@ -42,8 +42,9 @@ if __name__ == '__main__':
     )
     parser.add_argument(
         '-ims', '--imgsz', 
+        nargs='+',
         default=(1400, 1700), 
-        type=tuple, 
+        type=int, 
         help='image size to feed to the network'
     )
     parser.add_argument(
@@ -179,17 +180,21 @@ if __name__ == '__main__':
             outputs_CC = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_CC]
             outputs_MLO = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_MLO]
         # gather the stats from all processes
+        
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        metric = froc.FROC(num_classes, CLASSES)
-        #metric.update(preds, target)
-        #metric_summary = metric.compute()
-        metric_summary_CC = metric.compute(preds_CC,target_CC)
-        metric_summary_MLO = metric.compute(preds_MLO, target_MLO)
-        return metric_summary_CC, metric_summary_MLO
-
-    stats_CC, stats_MLO = evaluate(
+        preds = preds_CC.cooncat(preds_MLO)
+        target= target_CC.concat(target_MLO)
+        # metric1 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve CC',view= 'CC')
+        # #metric.update(preds, target)
+        # #metric_summary = metric.compute()
+        # metric_summary_CC = metric1.compute(preds_CC,target_CC)
+        # metric2 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve MLO', view= 'MLO')
+        # metric_summary_MLO = metric2.compute(preds_MLO, target_MLO)
+        # return metric_summary_CC, metric_summary_MLO
+        metric = froc.FROC(num_classes, CLASSES, threshold= [0.25, 0.5, 1,2,4], plot_title= 'FROC curve all',view = 'all')
+    stats = evaluate(
         model, 
         valid_loader, 
         device=DEVICE,
@@ -197,30 +202,4 @@ if __name__ == '__main__':
         classes=CLASSES,
     )
 
-    print('\n')
-    pprint(stats)
-    if args['verbose']:
-        print('\n')
-        pprint(f"Classes: {CLASSES}")
-        print('\n')
-        print('AP / AR per class')
-        empty_string = ''
-        if len(CLASSES) > 2: 
-            num_hyphens = 73
-            print('-'*num_hyphens)
-            print(f"|    | Class{empty_string:<16}| AP{empty_string:<18}| AR{empty_string:<18}|")
-            print('-'*num_hyphens)
-            class_counter = 0
-            for i in range(0, len(CLASSES)-1, 1):
-                class_counter += 1
-                print(f"|{class_counter:<3} | {CLASSES[i+1]:<20} | {np.array(stats['map_per_class'][i]):.3f}{empty_string:<15}| {np.array(stats['mar_100_per_class'][i]):.3f}{empty_string:<15}|")
-            print('-'*num_hyphens)
-            print(f"|Avg{empty_string:<23} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
-        else:
-            num_hyphens = 62
-            print('-'*num_hyphens)
-            print(f"|Class{empty_string:<10} | AP{empty_string:<18}| AR{empty_string:<18}|")
-            print('-'*num_hyphens)
-            print(f"|{CLASSES[1]:<15} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
-            print('-'*num_hyphens)
-            print(f"|Avg{empty_string:<12} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
+    
