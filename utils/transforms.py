@@ -9,6 +9,8 @@ import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 import torchvision
+import matplotlib.pyplot as plt
+import numpy as np
 __torchvision_need_compat_flag = float(torchvision.__version__.split('.')[1]) < 7
 if __torchvision_need_compat_flag:
     from torchvision.ops import _new_empty_tensor
@@ -312,3 +314,22 @@ class Compose(object):
             format_string += "    {0}".format(t)
         format_string += "\n)"
         return format_string
+
+
+class Breast_crop(object):
+    def __init__(self, thres1 = 1e7 , thres2 = 1e7):
+        self.thres1= thres1
+        self.thres2 = thres2
+    def __call__(self, img, target):
+        img1 = np.array(img)
+        h, w,_ = img1.shape
+        x = img1.sum(axis= (0,2))
+        y = np.cumsum(x)
+        thres= (y<self.thres1).sum()
+        j = max(0, thres-500) 
+        x = img1.sum(axis =(1,2))
+        y =np.cumsum(np.flip(x))
+        thres = (y< self.thres2).sum()
+        i = max(1, thres-500)
+        img, target = crop(img, target, (0,j,h-i,w-j))
+        return img, target

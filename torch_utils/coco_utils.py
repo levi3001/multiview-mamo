@@ -189,7 +189,7 @@ def convert_to_coco_api(ds):
     for img_idx in range(len(ds)):
         # find better way to get target
         # targets = ds.get_annotations(img_idx)
-        img, targets = ds[img_idx]
+        img, targets = ds.__getitem__(img_idx)
         ann_id = update_dataset(dataset,categories, img, targets, ann_id)
     dataset["categories"] = [{"id": i} for i in sorted(categories)]
     #print(dataset)
@@ -198,25 +198,37 @@ def convert_to_coco_api(ds):
     return coco_ds
 
 def convert_to_coco_api_multi(ds):
-    coco_ds_CC =COCO()
-    coco_ds_MLO = COCO()
+    # coco_ds_CC =COCO()
+    # coco_ds_MLO = COCO()
+    coco_ds = COCO()
     ann_id_CC =1
     ann_id_MLO =1 
     dataset_CC = {"images": [], "categories": [], "annotations": []}
     dataset_MLO = {"images": [], "categories": [], "annotations": []}
+    dataset = {"images": [], "categories": [], "annotations": []}
     categories_CC =set()
     categories_MLO =set()
     for img_idx in range(len(ds)):
         img_CC, img_MLO, targets_CC, targets_MLO = ds[img_idx]
         ann_id_CC = update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
         ann_id_MLO = update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
-    dataset_CC["categories"] = [{"id": i} for i in sorted(categories_CC)]
-    dataset_MLO["categories"] = [{"id": i} for i in sorted(categories_MLO)]
-    coco_ds_CC.dataset = dataset_CC
-    coco_ds_MLO.dataset = dataset_MLO
-    coco_ds_CC.createIndex()
-    coco_ds_MLO.createIndex() 
-    return coco_ds_CC, coco_ds_MLO
+    # dataset_CC["categories"] = [{"id": i} for i in sorted(categories_CC)]
+    # dataset_MLO["categories"] = [{"id": i} for i in sorted(categories_MLO)]
+    # coco_ds_CC.dataset = dataset_CC
+    # coco_ds_MLO.dataset = dataset_MLO
+    # coco_ds_CC.createIndex()
+    # coco_ds_MLO.createIndex() 
+    # return coco_ds_CC, coco_ds_MLO
+    categories = categories_CC.union(categories_MLO)
+    dataset['categories']= [{"id": i} for i in sorted(categories)]
+    dataset["images"]= dataset_CC['images'] + dataset_MLO['images']
+    dataset['annotations'] =dataset_CC['annotations'] +dataset_MLO["annotations"]
+    coco_ds.dataset = dataset
+    coco_ds.createIndex()
+    return coco_ds
+    
+    
+    
     
     
 def get_coco_api_from_dataset(dataset):

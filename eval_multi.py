@@ -7,6 +7,9 @@ python eval.py --config data_configs/voc.yaml --weights outputs/training/fasterr
 from datasets import (
     create_valid_dataset_multi, create_valid_loader
 )
+from datasets_DDSM import (
+    create_test_dataset_DDSM_multi
+)
 from models_multiview.multiview_detector import create_model
 from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
@@ -86,6 +89,7 @@ if __name__ == '__main__':
     except: # Else use the validation images.
         VALID_DIR_IMAGES = data_configs['VALID_DIR_IMAGES']
         VALID_DIR_LABELS = data_configs['VALID_DIR_LABELS']
+    dataset_name = data_configs['DATASE']
     NUM_CLASSES = data_configs['NC']
     CLASSES = data_configs['CLASSES']
     NUM_WORKERS = args['workers']
@@ -108,12 +112,20 @@ if __name__ == '__main__':
         model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE,norm = args['norm'], coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
-        valid_dataset = create_valid_dataset_multi(
-            VALID_DIR_IMAGES, 
-            VALID_DIR_LABELS, 
-            IMAGE_SIZE, 
-            CLASSES
-        )
+        if dataset_name == 'vindr_mammo':
+            valid_dataset = create_valid_dataset_multi(
+                VALID_DIR_IMAGES, 
+                VALID_DIR_LABELS, 
+                IMAGE_SIZE, 
+                CLASSES
+            )
+        elif dataset_name == 'DDSM':
+            valid_dataset = create_test_dataset_DDSM_multi(
+                VALID_DIR_IMAGES, 
+                VALID_DIR_LABELS, 
+                IMAGE_SIZE, 
+                CLASSES
+            )
     model.to(DEVICE).eval()
     
     valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS)
@@ -184,8 +196,8 @@ if __name__ == '__main__':
         metric_logger.synchronize_between_processes()
         torch.set_num_threads(n_threads)
         #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        preds = preds_CC.concat(preds_MLO)
-        target= target_CC.concat(target_MLO)
+        preds = preds_CC + preds_MLO 
+        target= target_CC + target_MLO
         # metric1 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve CC',view= 'CC')
         # #metric.update(preds, target)
         # #metric_summary = metric.compute()

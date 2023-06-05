@@ -298,11 +298,12 @@ def evaluate_multi(
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Test:"
 
-    coco_CC, coco_MLO = get_coco_api_from_dataset_multi(data_loader.dataset)
+    #coco_CC, coco_MLO = get_coco_api_from_dataset_multi(data_loader.dataset)
+    coco = get_coco_api_from_dataset_multi(data_loader.dataset)
     iou_types = _get_iou_types(model)
-    coco_evaluator_CC = CocoEvaluator(coco_CC, iou_types)
-    coco_evaluator_MLO = CocoEvaluator(coco_MLO, iou_types)
-
+    # coco_evaluator_CC = CocoEvaluator(coco_CC, iou_types)
+    # coco_evaluator_MLO = CocoEvaluator(coco_MLO, iou_types)
+    coco_evaluator = CocoEvaluator(coco, iou_types)
     counter = 0
     for images_CC, images_MLO, targets_CC, targets_MLO in metric_logger.log_every(data_loader, 100, header):
         counter += 1
@@ -320,23 +321,36 @@ def evaluate_multi(
 
         res_CC = {target["image_id"].item(): output for target, output in zip(targets_CC, outputs_CC)}
         res_MLO = {target["image_id"].item(): output for target, output in zip(targets_MLO, outputs_MLO)}
+        res = res_CC.copy()
+        res.update(res_MLO)
         evaluator_time = time.time()
-        coco_evaluator_CC.update(res_CC)
-        coco_evaluator_MLO.update(res_MLO)
+        # coco_evaluator_CC.update(res_CC)
+        # coco_evaluator_MLO.update(res_MLO)
+        coco_evaluator.update(res)
         evaluator_time = time.time() - evaluator_time
         metric_logger.update(model_time=model_time, evaluator_time=evaluator_time)
 
 
 
     # gather the stats from all processes
+    # metric_logger.synchronize_between_processes()
+    # print("Averaged stats:", metric_logger)
+    # coco_evaluator_CC.synchronize_between_processes()
+    # coco_evaluator_MLO.synchronize_between_processes()
+    # # accumulate predictions from all images
+    # coco_evaluator_CC.accumulate()
+    # stats_CC = coco_evaluator_CC.summarize()
+    # coco_evaluator_MLO.accumulate()
+    # stats_MLO = coco_evaluator_MLO.summarize()
+    # torch.set_num_threads(n_threads)
+    # return stats_CC, stats_MLO
+    # gather the stats from all processes
     metric_logger.synchronize_between_processes()
     print("Averaged stats:", metric_logger)
-    coco_evaluator_CC.synchronize_between_processes()
-    coco_evaluator_MLO.synchronize_between_processes()
+    coco_evaluator.synchronize_between_processes()
+
     # accumulate predictions from all images
-    coco_evaluator_CC.accumulate()
-    stats_CC = coco_evaluator_CC.summarize()
-    coco_evaluator_MLO.accumulate()
-    stats_MLO = coco_evaluator_MLO.summarize()
+    coco_evaluator.accumulate()
+    stats = coco_evaluator.summarize()
     torch.set_num_threads(n_threads)
-    return stats_CC, stats_MLO
+    return stats

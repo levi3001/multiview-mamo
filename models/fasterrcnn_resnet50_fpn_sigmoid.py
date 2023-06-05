@@ -85,7 +85,7 @@ def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, co
     box_roi_pool=None
     box_head=None
     box_predictor=None
-    box_score_thresh= 1e-7
+    box_score_thresh= 0
     box_nms_thresh=0.1
     box_detections_per_img=100
     box_fg_iou_thresh=0.5

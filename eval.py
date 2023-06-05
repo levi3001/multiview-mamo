@@ -7,7 +7,12 @@ python eval.py --config data_configs/voc.yaml --weights outputs/training/fasterr
 from datasets import (
     create_valid_dataset, create_valid_loader
 )
+
+from datasets_DDSM import(
+    create_train_dataset_DDSM, create_valid_dataset_DDSM, create_test_dataset_DDSM
+)
 from models.create_fasterrcnn_model import create_model
+
 from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from pprint import pprint
@@ -91,7 +96,7 @@ if __name__ == '__main__':
     NUM_WORKERS = args['workers']
     DEVICE = args['device']
     BATCH_SIZE = args['batch']
-
+    dataset_name = data_configs['DATASET']
     # Model configurations
     IMAGE_SIZE = args['imgsz']
 
@@ -108,12 +113,20 @@ if __name__ == '__main__':
         model = create_model(num_classes=NUM_CLASSES, norm= args['norm'], size= IMAGE_SIZE, coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         model.load_state_dict(checkpoint['model_state_dict'])
-        valid_dataset = create_valid_dataset(
-            VALID_DIR_IMAGES, 
-            VALID_DIR_LABELS, 
-            IMAGE_SIZE, 
-            CLASSES
-        )
+        if dataset_name == 'vindr_mammo':  
+            valid_dataset = create_valid_dataset(
+                VALID_DIR_IMAGES, 
+                VALID_DIR_LABELS, 
+                IMAGE_SIZE, 
+                CLASSES
+            )
+        if dataset_name == 'DDSM':  
+            valid_dataset = create_test_dataset_DDSM(
+                VALID_DIR_IMAGES, 
+                VALID_DIR_LABELS, 
+                IMAGE_SIZE, 
+                CLASSES,
+            )
     model.to(DEVICE).eval()
     
     valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS)

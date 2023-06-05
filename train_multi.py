@@ -17,7 +17,10 @@ from torch.utils.data import (
     distributed, RandomSampler, SequentialSampler
 )
 from datasets import (
-    create_train_dataset_multi, create_valid_dataset_multi, create_train_loader, create_valid_loader
+    create_train_dataset_multi, create_valid_dataset_multi, create_train_loader, create_valid_loader,
+)
+from datasets_DDSM import(
+    create_train_dataset_DDSM_multi, create_test_dataset_DDSM, create_valid_dataset_DDSM_multi
 )
 from models_multiview.multiview_detector import create_model
 from utils.general import (
@@ -178,6 +181,7 @@ def main(args):
     init_seeds(args['seed'] + 1 + RANK, deterministic=True)
     
     # Settings/parameters/constants.
+    dataset_name = data_configs['DATASET']
     TRAIN_DIR_IMAGES = os.path.normpath(data_configs['TRAIN_DIR_IMAGES'])
     TRAIN_DIR_LABELS = os.path.normpath(data_configs['TRAIN_DIR_LABELS'])
     VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
@@ -201,19 +205,32 @@ def main(args):
 
     # Model configurations
     IMAGE_SIZE = tuple(args['imgsz'])
-    
-    train_dataset = create_train_dataset_multi(
-        TRAIN_DIR_IMAGES, 
-        TRAIN_DIR_LABELS,
-        IMAGE_SIZE, 
-        CLASSES,
-    )
-    valid_dataset = create_valid_dataset_multi(
-        VALID_DIR_IMAGES, 
-        VALID_DIR_LABELS, 
-        IMAGE_SIZE, 
-        CLASSES,
-    )
+    if dataset_name == 'vindr_mammo':
+        train_dataset = create_train_dataset_multi(
+            TRAIN_DIR_IMAGES, 
+            TRAIN_DIR_LABELS,
+            IMAGE_SIZE, 
+            CLASSES,
+        )
+        valid_dataset = create_valid_dataset_multi(
+            VALID_DIR_IMAGES, 
+            VALID_DIR_LABELS, 
+            IMAGE_SIZE, 
+            CLASSES,\
+        )
+    if dataset_name == 'DDSM':
+        train_dataset = create_train_dataset_DDSM_multi(
+            TRAIN_DIR_IMAGES, 
+            TRAIN_DIR_LABELS,
+            IMAGE_SIZE, 
+            CLASSES,
+        )
+        valid_dataset = create_valid_dataset_DDSM_multi(
+            VALID_DIR_IMAGES, 
+            VALID_DIR_LABELS, 
+            IMAGE_SIZE, 
+            CLASSES,\
+        )
     print('Creating data loaders')
     if args['distributed']:
         train_sampler = distributed.DistributedSampler(
@@ -367,8 +384,33 @@ def main(args):
             print_freq=100,
             scheduler=scheduler
         )
-        if epoch%5 ==0:
-            stats_CC, stats_MLO = evaluate_multi(
+        if epoch%20 ==0:
+            # stats_CC, stats_MLO = evaluate_multi(
+            #     model, 
+            #     valid_loader, 
+            #     device=DEVICE,
+            #     save_valid_preds=SAVE_VALID_PREDICTIONS,
+            #     out_dir=OUT_DIR,
+            #     classes=CLASSES,
+            #     colors=COLORS
+            # )
+            # val_map_05_CC.append(stats_CC[1])
+            # val_map_CC.append(stats_CC[0])
+            # val_map_05_MLO.append(stats_MLO[1])
+            # val_map_MLO.append(stats_MLO[0])
+            # val_map.append((stats_CC[0]+stats_MLO[0])/2)
+            # val_map_05.append((stats_CC[1]+ stats_MLO[1])/2)        
+            # # Save mAP plots.
+            # save_mAP(OUT_DIR, val_map_05, val_map)
+            # # Save mAP plot using TensorBoard.
+            # tensorboard_map_log(
+            #     name='mAP', 
+            #     val_map_05=np.array(val_map_05), 
+            #     val_map=np.array(val_map),
+            #     writer=writer,
+            #     epoch=epoch
+            # )
+            stats = evaluate_multi(
                 model, 
                 valid_loader, 
                 device=DEVICE,
@@ -377,12 +419,8 @@ def main(args):
                 classes=CLASSES,
                 colors=COLORS
             )
-            val_map_05_CC.append(stats_CC[1])
-            val_map_CC.append(stats_CC[0])
-            val_map_05_MLO.append(stats_MLO[1])
-            val_map_MLO.append(stats_MLO[0])
-            val_map.append((stats_CC[0]+stats_MLO[0])/2)
-            val_map_05.append((stats_CC[1]+ stats_MLO[1])/2)        
+            val_map_05.append(stats[1])
+            val_map.append(stats[0])        
             # Save mAP plots.
             save_mAP(OUT_DIR, val_map_05, val_map)
             # Save mAP plot using TensorBoard.
@@ -460,11 +498,11 @@ def main(args):
 
 
 
-        coco_log(OUT_DIR, stats_CC)
-        coco_log(OUT_DIR, stats_MLO)
+        coco_log(OUT_DIR, stats)
+        #coco_log(OUT_DIR, stats_MLO)
         csv_log(
             OUT_DIR, 
-            stats_CC, 
+            stats, 
             epoch,
             train_loss_list,
             loss_cls_list,

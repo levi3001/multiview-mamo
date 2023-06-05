@@ -20,6 +20,9 @@ from datasets import (
     create_train_dataset, create_valid_dataset, 
     create_train_loader, create_valid_loader
 )
+from datasets_DDSM import(
+    create_train_dataset_DDSM, create_valid_dataset_DDSM
+)
 from models.create_fasterrcnn_model import create_model
 from utils.general import (
     set_training_dir, Averager, 
@@ -179,6 +182,7 @@ def main(args):
     init_seeds(args['seed'] + 1 + RANK, deterministic=True)
     
     # Settings/parameters/constants.
+    dataset_name = data_configs['DATASET']
     TRAIN_DIR_IMAGES = os.path.normpath(data_configs['TRAIN_DIR_IMAGES'])
     TRAIN_DIR_LABELS = os.path.normpath(data_configs['TRAIN_DIR_LABELS'])
     VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
@@ -202,20 +206,34 @@ def main(args):
 
     # Model configurations
     IMAGE_SIZE = args['imgsz']
-    
-    train_dataset = create_train_dataset(
-        TRAIN_DIR_IMAGES, 
-        TRAIN_DIR_LABELS,
-        IMAGE_SIZE, 
-        CLASSES,
+    if dataset_name == 'vindr_mammo':  
+        train_dataset = create_train_dataset(
+            TRAIN_DIR_IMAGES, 
+            TRAIN_DIR_LABELS,
+            IMAGE_SIZE, 
+            CLASSES,
 
-    )
-    valid_dataset = create_valid_dataset(
-        VALID_DIR_IMAGES, 
-        VALID_DIR_LABELS, 
-        IMAGE_SIZE, 
-        CLASSES,
-    )
+        )
+        valid_dataset = create_valid_dataset(
+            VALID_DIR_IMAGES, 
+            VALID_DIR_LABELS, 
+            IMAGE_SIZE, 
+            CLASSES,
+        )
+    if dataset_name == 'DDSM':  
+        train_dataset = create_train_dataset_DDSM(
+            TRAIN_DIR_IMAGES, 
+            TRAIN_DIR_LABELS,
+            IMAGE_SIZE, 
+            CLASSES,
+
+        )
+        valid_dataset = create_valid_dataset_DDSM(
+            VALID_DIR_IMAGES, 
+            VALID_DIR_LABELS, 
+            IMAGE_SIZE, 
+            CLASSES,
+        )
     print('Creating data loaders')
     if args['distributed']:
         train_sampler = distributed.DistributedSampler(
@@ -365,7 +383,7 @@ def main(args):
             print_freq=500,
             scheduler=scheduler
         )
-        if epoch%10 ==0:
+        if epoch%20 ==0:
             stats, val_pred_image = evaluate(
                 model, 
                 valid_loader, 
