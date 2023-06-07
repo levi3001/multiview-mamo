@@ -9,7 +9,10 @@ from torchvision.models.detection.roi_heads import RoIHeads
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from detection.transformer import CrossviewTransformer
 from detection.position_encoding import PositionEmbeddingSine
-from detection.loss import fastrcnn_loss1
+from detection.loss import fastrcnn_loss1, Mix_loss
+
+
+
 def pad_sequence(sequences, batch_first=True, padding_value=0):
     """
     Pad a list of variable length tensors with zeros to create a tensor with uniform shape.
@@ -66,7 +69,8 @@ class Multi_roi_heads(RoIHeads):
         mask_predictor=None,
         keypoint_roi_pool=None,
         keypoint_head=None,
-        keypoint_predictor=None,):
+        keypoint_predictor=None,
+        loss_type= 'fasterrcnn1'):
         super().__init__(box_roi_pool,
         box_head,
         box_predictor,
@@ -86,12 +90,13 @@ class Multi_roi_heads(RoIHeads):
         mask_predictor=None,
         keypoint_roi_pool=None,
         keypoint_head=None,
-        keypoint_predictor=None)
+        keypoint_predictor=None,
+        )
         
         
         self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
         self.pos_encode = PositionEmbeddingSine(512)
-        
+        self.loss_type =loss_type 
         
     def postprocess_detections(
         self,
@@ -233,8 +238,12 @@ class Multi_roi_heads(RoIHeads):
                 raise ValueError("labels cannot be None")
             if regression_targets_CC is None or regression_targets_MLO is None:
                 raise ValueError("regression_targets cannot be None")
-            loss_classifier_CC, loss_box_reg_CC = fastrcnn_loss1(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
-            loss_classifier_MLO, loss_box_reg_MLO = fastrcnn_loss1(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
+            if self.loss_type == 'fasterrcnn1':
+                loss_func = fastrcnn_loss1
+            elif self.loss_type == 'mix':
+                loss_func = Mix_loss
+            loss_classifier_CC, loss_box_reg_CC = loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
+            loss_classifier_MLO, loss_box_reg_MLO = loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
             loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }
             loss_MLO = {"loss_classifier": loss_classifier_MLO, "loss_box_reg": loss_box_reg_MLO}
         else:
@@ -262,31 +271,3 @@ class Multi_roi_heads(RoIHeads):
 
         return result_CC, result_MLO, loss_CC, loss_MLO
 
-# Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/custom_fast_rcnn.py#L113  # noqa
-# with slight modifications
-#Detectron2
-def sigmoid_cross_entropy_loss( pred_class_logits, gt_classes):
-    """
-    Args:
-        pred_class_logits: shape (N, K+1), scores for each of the N box. Each row contains the
-        scores for K object categories and 1 background class
-        gt_classes: a long tensor of shape R that contains the gt class label of each proposal.
-    """
-    if pred_class_logits.numel() == 0:
-        return pred_class_logits.new_zeros([1])[0]
-
-    N = pred_class_logits.shape[0]
-    K = pred_class_logits.shape[1] - 1
-
-    target = pred_class_logits.new_zeros(N, K + 1)
-    target[range(len(gt_classes)), gt_classes] = 1
-    target = target[:, 1:]
-
-    cls_loss = F.binary_cross_entropy_with_logits(
-        pred_class_logits[:, 1:], target, reduction="none"
-    )
-
-    weight = 1
-
-    loss = torch.sum(cls_loss * weight) / N
-    return loss
