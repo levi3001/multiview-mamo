@@ -154,7 +154,7 @@ def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, c
             box_nms_thresh,
             box_detections_per_img,
             use_self_attn,   ###use self attention in decoder
-            loss = loss
+            loss_type = loss
     )
     
 
