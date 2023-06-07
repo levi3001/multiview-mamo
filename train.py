@@ -383,7 +383,7 @@ def main(args):
             print_freq=500,
             scheduler=scheduler
         )
-        if epoch%20 ==0:
+        if epoch%10 ==0:
             stats, val_pred_image = evaluate(
                 model, 
                 valid_loader, 
