@@ -216,7 +216,7 @@ def main(args):
             VALID_DIR_IMAGES, 
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
-            CLASSES,\
+            CLASSES,
         )
     if dataset_name == 'DDSM':
         train_dataset = create_train_dataset_DDSM_multi(
@@ -229,7 +229,7 @@ def main(args):
             VALID_DIR_IMAGES, 
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
-            CLASSES,\
+            CLASSES,
         )
     print('Creating data loaders')
     if args['distributed']:

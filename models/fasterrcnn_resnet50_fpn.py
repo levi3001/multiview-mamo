@@ -12,33 +12,8 @@ from torchvision.ops import misc as misc_nn_ops
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers
 from torchvision.models.resnet import resnet50, ResNet50_Weights
 import torch.nn.functional as F
+from utils.norm import LayerNorm2d, get_layer, set_layer
 
-class LayerNorm2d(nn.LayerNorm):
-    """ LayerNorm for channels of '2D' spatial NCHW tensors """
-    def __init__(self, num_channels, eps=1e-6, affine=True):
-        super().__init__(num_channels, eps=eps, elementwise_affine=affine)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x.permute(0, 2, 3, 1)
-        x = F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
-        x = x.permute(0, 3, 1, 2)
-        return x
-    
-    
-def get_layer(model, name):
-    layer = model
-    for attr in name.split("."):
-        layer = getattr(layer, attr)
-    return layer
-
-
-def set_layer(model, name, layer):
-    try:
-        attrs, name = name.rsplit(".", 1)
-        model = get_layer(model, attrs)
-    except ValueError:
-        pass
-    setattr(model, name, layer)
     
 def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False):
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
