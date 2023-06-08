@@ -283,7 +283,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model
-        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'], loss= args['loss'])
+        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'], loss_type= args['loss'])
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:

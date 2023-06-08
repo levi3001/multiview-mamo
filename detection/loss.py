@@ -7,8 +7,8 @@ from torch import nn, Tensor
 from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection.roi_heads import RoIHeads 
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-
-
+from torchvision.ops.focal_loss import sigmoid_focal_loss
+from torchvision.ops.diou_loss import distance_box_iou_loss
 
 def fastrcnn_loss1(class_logits, box_regression, labels, regression_targets):
     # type: (Tensor, Tensor, List[Tensor], List[Tensor]) -> Tuple[Tensor, Tensor]
@@ -82,7 +82,6 @@ def sigmoid_cross_entropy_loss( pred_class_logits, gt_classes):
 
 
 def Focal_loss(class_logits,  labels):
-    labels = torch.cat(labels, dim =0)
     if class_logits.numel() == 0:
         return class_logits.new_zeros([1])[0]
 
@@ -91,10 +90,10 @@ def Focal_loss(class_logits,  labels):
 
     target = class_logits.new_zeros(N, K + 1)
     target[range(len(labels)), labels] = 1
-    loss = torchvision.ops.focal_loss(class_logits, labels, reduction = 'mean')
+    loss = sigmoid_focal_loss(class_logits, target, reduction = 'mean')
     return loss 
 def DIOU_loss(box_regression, regression_targets):
-   return torchvision.ops.diou_loss(box_regression, regression_targets, reduction = 'sum')
+   return distance_box_iou_loss(box_regression, regression_targets, reduction = 'sum')
 
 #focal loss + DIOU loss
 
