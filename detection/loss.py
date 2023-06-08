@@ -123,8 +123,9 @@ def Mix_loss(class_logits, box_regression, labels, regression_targets):
 def sigmoid_focal_loss(
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    alpha: float = 0.25,
+    alpha: float = -1,
     gamma: float = 2,
+    eps= 1e-6,
     reduction: str = "none",
 ) -> torch.Tensor:
     """
@@ -148,9 +149,10 @@ def sigmoid_focal_loss(
     """
     inputs = inputs.float()
     targets = targets.float()
-    p = torch.sigmoid(inputs)
+    #p = torch.clamp(torch.sigmoid(inputs), min= eps, max= 1-eps)
     ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
-    p_t = p * targets + (1 - p) * (1 - targets)
+    #p_t = p * targets + (1 - p) * (1 - targets)
+    p_t= torch.exp(-ce_loss)
     loss = ce_loss * ((1 - p_t) ** gamma)
 
     if alpha >= 0:
