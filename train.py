@@ -166,6 +166,12 @@ def parse_opt():
         default=None,
         help='normalization type'
     )
+    
+    parser.add_argument(
+        '--loss', 
+        default='fasterrcnn1',
+        help='normalization type'
+    )
 
     args = vars(parser.parse_args())
     return args

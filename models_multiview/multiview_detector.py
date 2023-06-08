@@ -77,7 +77,7 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
         losses_MLO.update(proposal_losses_MLO)
         return self.eager_outputs(losses_CC, losses_MLO, detections_CC, detections_MLO)
 
-def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, coco_model=False, use_self_attn = False, loss ='fasterrcnn1', **kwargs):
+def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, coco_model=False, use_self_attn = False, loss_type ='fasterrcnn1', **kwargs):
     # Load Faster RCNN pre-trained model
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
@@ -154,7 +154,7 @@ def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, c
             box_nms_thresh,
             box_detections_per_img,
             use_self_attn,   ###use self attention in decoder
-            loss_type = loss
+            loss_type = loss_type
     )
     
 
