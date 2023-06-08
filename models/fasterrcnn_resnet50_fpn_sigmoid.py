@@ -14,7 +14,7 @@ from torchvision.models.resnet import resnet50, ResNet50_Weights
 import torch.nn.functional as F
 from utils.norm import LayerNorm2d, get_layer, set_layer
     
-def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False):
+def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False, loss_type ='fasterrcnn1'):
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
     #weights_backbone = None
@@ -90,6 +90,7 @@ def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, co
             box_score_thresh,
             box_nms_thresh,
             box_detections_per_img,
+            loss_type = loss_type
     )
     
     return model

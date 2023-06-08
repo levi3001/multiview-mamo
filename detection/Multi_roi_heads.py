@@ -242,6 +242,9 @@ class Multi_roi_heads(RoIHeads):
                 loss_func = fastrcnn_loss1
             elif self.loss_type == 'mix':
                 loss_func = Mix_loss
+            else:
+                print('wrong loss')
+                raise Exception()
             loss_classifier_CC, loss_box_reg_CC = loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
             loss_classifier_MLO, loss_box_reg_MLO = loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
             loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }

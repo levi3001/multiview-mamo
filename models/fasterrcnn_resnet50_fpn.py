@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from utils.norm import LayerNorm2d, get_layer, set_layer
 
     
-def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False):
+def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False, loss_type ='fasterrcnn'):
     weights_backbone= ResNet50_Weights.IMAGENET1K_V1
     weights_backbone = ResNet50_Weights.verify(weights_backbone)
     #weights_backbone = None

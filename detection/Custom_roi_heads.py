@@ -7,7 +7,7 @@ from torch import nn, Tensor
 from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection.roi_heads import RoIHeads 
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from detection.loss import fastrcnn_loss1
+from detection.loss import fastrcnn_loss1, Mix_loss
 
 
 
@@ -33,7 +33,9 @@ class Custom_roi_heads(RoIHeads):
         mask_predictor=None,
         keypoint_roi_pool=None,
         keypoint_head=None,
-        keypoint_predictor=None,):
+        keypoint_predictor=None,
+        #loss
+        loss_type = 'fasterrcnn1'):
         super().__init__(box_roi_pool,
         box_head,
         box_predictor,
@@ -54,7 +56,8 @@ class Custom_roi_heads(RoIHeads):
         keypoint_roi_pool=None,
         keypoint_head=None,
         keypoint_predictor=None)
-        
+        self.loss_type = loss_type
+                
     def postprocess_detections(
         self,
         class_logits,  # type: Tensor
@@ -161,7 +164,14 @@ class Custom_roi_heads(RoIHeads):
                 raise ValueError("labels cannot be None")
             if regression_targets is None:
                 raise ValueError("regression_targets cannot be None")
-            loss_classifier, loss_box_reg = fastrcnn_loss1(class_logits, box_regression, labels, regression_targets)
+            if self.loss_type == 'fasterrcnn1':
+                loss_func = fastrcnn_loss1
+            elif self.loss_type == 'mix':
+                loss_func = Mix_loss
+            else:
+                print('wrong loss')
+                raise Exception()
+            loss_classifier, loss_box_reg = loss_func(class_logits, box_regression, labels, regression_targets)
             losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
         else:
             boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)

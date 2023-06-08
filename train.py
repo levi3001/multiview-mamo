@@ -281,7 +281,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model[args['model']]
-        model = build_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, norm= args['norm'], pretrained=True, coco_model= False)
+        model = build_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, norm= args['norm'], pretrained=True, coco_model= False, loss_type = args['loss'])
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:
@@ -296,7 +296,7 @@ def main(args):
 
         # Build the new model with number of classes same as checkpoint.
         build_model = create_model[args['model']]
-        model = build_model(num_classes=old_classes, size= IMAGE_SIZE, norm = args['norm'])
+        model = build_model(num_classes=old_classes, size= IMAGE_SIZE, norm = args['norm'], loss_type =args['loss'])
         # Load weights.
         model.load_state_dict(ckpt_state_dict)
 
