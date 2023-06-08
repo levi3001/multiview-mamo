@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-
+import math
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -245,6 +245,9 @@ class Multi_roi_heads(RoIHeads):
             else:
                 print('wrong loss')
                 raise Exception()
+            
+            if torch.any(torch.isnan(class_logits_CC)):
+                print('finding nan')
             loss_classifier_CC, loss_box_reg_CC = loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
             loss_classifier_MLO, loss_box_reg_MLO = loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
             loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }

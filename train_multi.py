@@ -391,7 +391,7 @@ def main(args):
             print_freq=100,
             scheduler=scheduler
         )
-        if epoch%20 ==0:
+        if epoch%10 ==0:
             # stats_CC, stats_MLO = evaluate_multi(
             #     model, 
             #     valid_loader, 

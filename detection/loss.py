@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Tuple
-
+import math
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -7,7 +7,7 @@ from torch import nn, Tensor
 from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection.roi_heads import RoIHeads 
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from torchvision.ops.focal_loss import sigmoid_focal_loss
+#from torchvision.ops.focal_loss import sigmoid_focal_loss
 from torchvision.ops.diou_loss import distance_box_iou_loss
 
 def fastrcnn_loss1(class_logits, box_regression, labels, regression_targets):
@@ -101,6 +101,9 @@ def Mix_loss(class_logits, box_regression, labels, regression_targets):
     regression_targets = torch.cat(regression_targets, dim=0)
     labels = torch.cat(labels, dim =0)
     classification_loss = Focal_loss(class_logits, labels)
+    if math.isnan(classification_loss):
+        print(class_logits)
+        print(labels)
     # get indices that correspond to the regression targets for
     # the corresponding ground truth labels, to be used with
     # advanced indexing
@@ -114,3 +117,49 @@ def Mix_loss(class_logits, box_regression, labels, regression_targets):
     box_loss = box_loss / labels.numel()
 
     return classification_loss, box_loss
+
+#https://github.com/facebookresearch/fvcore/blob/main/fvcore/nn/focal_loss.py
+
+def sigmoid_focal_loss(
+    inputs: torch.Tensor,
+    targets: torch.Tensor,
+    alpha: float = 0.25,
+    gamma: float = 2,
+    reduction: str = "none",
+) -> torch.Tensor:
+    """
+    Loss used in RetinaNet for dense detection: https://arxiv.org/abs/1708.02002.
+    Args:
+        inputs: A float tensor of arbitrary shape.
+                The predictions for each example.
+        targets: A float tensor with the same shape as inputs. Stores the binary
+                 classification label for each element in inputs
+                (0 for the negative class and 1 for the positive class).
+        alpha: (optional) Weighting factor in range (0,1) to balance
+                positive vs negative examples. Default = -1 (no weighting).
+        gamma: Exponent of the modulating factor (1 - p_t) to
+               balance easy vs hard examples.
+        reduction: 'none' | 'mean' | 'sum'
+                 'none': No reduction will be applied to the output.
+                 'mean': The output will be averaged.
+                 'sum': The output will be summed.
+    Returns:
+        Loss tensor with the reduction option applied.
+    """
+    inputs = inputs.float()
+    targets = targets.float()
+    p = torch.sigmoid(inputs)
+    ce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction="none")
+    p_t = p * targets + (1 - p) * (1 - targets)
+    loss = ce_loss * ((1 - p_t) ** gamma)
+
+    if alpha >= 0:
+        alpha_t = alpha * targets + (1 - alpha) * (1 - targets)
+        loss = alpha_t * loss
+
+    if reduction == "mean":
+        loss = loss.mean()
+    elif reduction == "sum":
+        loss = loss.sum()
+
+    return loss
