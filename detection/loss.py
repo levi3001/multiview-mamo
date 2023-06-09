@@ -123,7 +123,7 @@ def Mix_loss(class_logits, box_regression, labels, regression_targets):
 def sigmoid_focal_loss(
     inputs: torch.Tensor,
     targets: torch.Tensor,
-    alpha: float = -1,
+    alpha: float = 0.25,
     gamma: float = 2,
     eps= 1e-6,
     reduction: str = "none",

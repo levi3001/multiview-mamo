@@ -117,6 +117,13 @@ def parse_opt():
         help='visualize transformed images fed to the network'
     )
     parser.add_argument(
+        '-opt', '--optimizer', 
+        default= 'sgd', 
+        type=str, 
+        choices= ['sgd', 'adam'],
+        help='training result dir name in outputs/training/, (default res_#)'
+    )
+    parser.add_argument(
         '-ca', '--cosine-annealing', 
         dest='cosine_annealing', 
         action='store_true',
@@ -170,6 +177,7 @@ def parse_opt():
     parser.add_argument(
         '--loss', 
         default='fasterrcnn1',
+        choices= ['fasterrcnn1', 'mix'],
         help='normalization type'
     )
     
@@ -351,8 +359,10 @@ def main(args):
     # Get the model parameters.
     params = [p for p in model.parameters() if p.requires_grad]
     # Define the optimizer.
-    #optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov= False, weight_decay= 1e-4)
-    optimizer = torch.optim.AdamW(params, lr=0.0001, weight_decay=0.0005)
+    if args['optimizer'] == 'sgd':
+        optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov= False, weight_decay= 1e-4)
+    elif args['optimizer'] == 'adam':
+        optimizer = torch.optim.AdamW(params, lr=args['lr'], weight_decay=0.001)
     if args['resume_training']: 
         # LOAD THE OPTIMIZER STATE DICTIONARY FROM THE CHECKPOINT.
         print('Loading optimizer state dictionary...')
