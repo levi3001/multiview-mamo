@@ -41,6 +41,8 @@ from utils.logging import (
     wandb_init
 )
 
+from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
+
 import torch
 import argparse
 import yaml
@@ -180,7 +182,12 @@ def parse_opt():
         choices= ['fasterrcnn1', 'mix'],
         help='normalization type'
     )
-    
+    parser.add_argument(
+        '--eval-frequent', 
+        default=10, 
+        type=int, 
+        help='evaluate frequent'
+    )
 
     args = vars(parser.parse_args())
     return args
@@ -383,7 +390,7 @@ def main(args):
         scheduler = None
 
     save_best_model = SaveBestModel()
-
+    coco = get_coco_api_from_dataset_multi(valid_loader.dataset)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
@@ -401,7 +408,8 @@ def main(args):
             print_freq=100,
             scheduler=scheduler
         )
-        if epoch%10 ==0:
+            
+        if epoch% args['eval_frequent'] ==0:
             # stats_CC, stats_MLO = evaluate_multi(
             #     model, 
             #     valid_loader, 
@@ -430,6 +438,7 @@ def main(args):
             stats = evaluate_multi(
                 model, 
                 valid_loader, 
+                coco,
                 device=DEVICE,
                 save_valid_preds=SAVE_VALID_PREDICTIONS,
                 out_dir=OUT_DIR,

@@ -7,7 +7,7 @@ import torchvision
 # import transforms as T
 from pycocotools import mask as coco_mask
 from pycocotools.coco import COCO
-
+from tqdm import tqdm
 
 class FilterAndRemapCocoCategories:
     def __init__(self, categories, remap=True):
@@ -186,7 +186,7 @@ def convert_to_coco_api(ds):
     ann_id = 1
     dataset = {"images": [], "categories": [], "annotations": []}
     categories = set()
-    for img_idx in range(len(ds)):
+    for img_idx in tqdm(range(len(ds))):
         # find better way to get target
         # targets = ds.get_annotations(img_idx)
         img, targets = ds.__getitem__(img_idx)
@@ -208,7 +208,7 @@ def convert_to_coco_api_multi(ds):
     dataset = {"images": [], "categories": [], "annotations": []}
     categories_CC =set()
     categories_MLO =set()
-    for img_idx in range(len(ds)):
+    for img_idx in tqdm(range(len(ds))):
         img_CC, img_MLO, targets_CC, targets_MLO = ds[img_idx]
         ann_id_CC = update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
         ann_id_MLO = update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)

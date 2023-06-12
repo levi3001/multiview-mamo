@@ -120,6 +120,7 @@ def _get_iou_types(model):
 def evaluate(
     model, 
     data_loader, 
+    coco,
     device, 
     save_valid_preds=False,
     out_dir=None,
@@ -134,7 +135,6 @@ def evaluate(
     metric_logger = utils.MetricLogger(delimiter="  ")
     header = "Test:"
 
-    coco = get_coco_api_from_dataset(data_loader.dataset)
     iou_types = _get_iou_types(model)
     coco_evaluator = CocoEvaluator(coco, iou_types)
 
@@ -284,6 +284,7 @@ def train_one_epoch_multi(
 def evaluate_multi(
     model, 
     data_loader, 
+    coco,
     device, 
     save_valid_preds=False,
     out_dir=None,
@@ -299,7 +300,7 @@ def evaluate_multi(
     header = "Test:"
 
     #coco_CC, coco_MLO = get_coco_api_from_dataset_multi(data_loader.dataset)
-    coco = get_coco_api_from_dataset_multi(data_loader.dataset)
+    
     iou_types = _get_iou_types(model)
     # coco_evaluator_CC = CocoEvaluator(coco_CC, iou_types)
     # coco_evaluator_MLO = CocoEvaluator(coco_MLO, iou_types)

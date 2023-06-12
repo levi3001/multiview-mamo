@@ -242,6 +242,10 @@ class Multi_roi_heads(RoIHeads):
                 loss_func = fastrcnn_loss1
             elif self.loss_type == 'mix':
                 loss_func = Mix_loss
+                box_regression_CC = self.box_coder.decode(box_regression_CC, proposals_CC)
+                regression_targets_CC = self.box_coder.decode(regression_targets_CC, proposals_CC)
+                box_regression_MLO = self.box_coder.decode(box_regression_MLO, proposals_MLO)
+                regression_targets_MLO = self.box_coder.decode(regression_targets_MLO, proposals_MLO)
             else:
                 print('wrong loss')
                 raise Exception()

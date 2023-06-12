@@ -41,6 +41,9 @@ from utils.logging import (
     wandb_save_model,
     wandb_init
 )
+from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
+
+
 
 import torch
 import argparse
@@ -178,6 +181,12 @@ def parse_opt():
         '--loss', 
         default='fasterrcnn1',
         help='normalization type'
+    )
+    parser.add_argument(
+        '--eval-frequent', 
+        default=10, 
+        type=int, 
+        help='evaluate frequent'
     )
 
     args = vars(parser.parse_args())
@@ -381,6 +390,8 @@ def main(args):
 
     save_best_model = SaveBestModel()
 
+    #coco evaluate 
+    coco = get_coco_api_from_dataset(valid_loader.dataset)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
@@ -398,10 +409,11 @@ def main(args):
             print_freq=100,
             scheduler=scheduler
         )
-        if epoch%20 ==0:
+        if epoch% args['eval_frequent'] ==0:
             stats, val_pred_image = evaluate(
                 model, 
                 valid_loader, 
+                coco,
                 device=DEVICE,
                 save_valid_preds=SAVE_VALID_PREDICTIONS,
                 out_dir=OUT_DIR,

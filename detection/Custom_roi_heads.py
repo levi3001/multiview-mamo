@@ -168,6 +168,10 @@ class Custom_roi_heads(RoIHeads):
                 loss_func = fastrcnn_loss1
             elif self.loss_type == 'mix':
                 loss_func = Mix_loss
+                box_regression = self.box_coder.decode(box_regression, proposals)
+                regression_targets = torch.cat(regression_targets, dim=0)
+                regression_targets = self.box_coder.decode(regression_targets, proposals).squeeze(1)
+                #print(regression_targets.shape)
             else:
                 print('wrong loss')
                 raise Exception()
