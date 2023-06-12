@@ -186,11 +186,12 @@ def convert_to_coco_api(ds):
     ann_id = 1
     dataset = {"images": [], "categories": [], "annotations": []}
     categories = set()
-    for img_idx in tqdm(range(len(ds))):
+    for bimg, btarget in tqdm(ds):
         # find better way to get target
         # targets = ds.get_annotations(img_idx)
-        img, targets = ds.__getitem__(img_idx)
-        ann_id = update_dataset(dataset,categories, img, targets, ann_id)
+        for idx in range(len(bimg)):
+            img, targets = bimg[idx], btarget[idx]
+            ann_id = update_dataset(dataset,categories, img, targets, ann_id)
     dataset["categories"] = [{"id": i} for i in sorted(categories)]
     #print(dataset)
     coco_ds.dataset = dataset
@@ -208,10 +209,11 @@ def convert_to_coco_api_multi(ds):
     dataset = {"images": [], "categories": [], "annotations": []}
     categories_CC =set()
     categories_MLO =set()
-    for img_idx in tqdm(range(len(ds))):
-        img_CC, img_MLO, targets_CC, targets_MLO = ds[img_idx]
-        ann_id_CC = update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
-        ann_id_MLO = update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
+    for bimg_CC, bimg_MLO, btargets_CC, btargets_MLO in tqdm(ds):
+            for idx in range(len(bimg_CC)):
+            img_CC, img_MLO, targets_CC, targets_MLO = bimg_CC[idx], bimg_MLO[idx], btargets_CC[idx], btargets_MLO[idx]
+            ann_id_CC = update_dataset(dataset_CC,categories_CC, img_CC, targets_CC, ann_id_CC)
+            ann_id_MLO = update_dataset(dataset_MLO, categories_MLO, img_MLO, targets_MLO, ann_id_MLO)
     # dataset_CC["categories"] = [{"id": i} for i in sorted(categories_CC)]
     # dataset_MLO["categories"] = [{"id": i} for i in sorted(categories_MLO)]
     # coco_ds_CC.dataset = dataset_CC
@@ -232,13 +234,6 @@ def convert_to_coco_api_multi(ds):
     
     
 def get_coco_api_from_dataset(dataset):
-    for _ in range(10):
-        if isinstance(dataset, torchvision.datasets.CocoDetection):
-            break
-        if isinstance(dataset, torch.utils.data.Subset):
-            dataset = dataset.dataset
-    if isinstance(dataset, torchvision.datasets.CocoDetection):
-        return dataset.coco
     return convert_to_coco_api(dataset)
 
 

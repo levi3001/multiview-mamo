@@ -390,7 +390,7 @@ def main(args):
         scheduler = None
 
     save_best_model = SaveBestModel()
-    coco = get_coco_api_from_dataset_multi(valid_loader.dataset)
+    coco = get_coco_api_from_dataset_multi(valid_loader)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 

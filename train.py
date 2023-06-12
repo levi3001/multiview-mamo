@@ -391,7 +391,7 @@ def main(args):
     save_best_model = SaveBestModel()
 
     #coco evaluate 
-    coco = get_coco_api_from_dataset(valid_loader.dataset)
+    coco = get_coco_api_from_dataset(valid_loader)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
