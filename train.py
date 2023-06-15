@@ -42,6 +42,7 @@ from utils.logging import (
     wandb_init
 )
 from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
+import multiprocessing as mp
 
 
 
@@ -546,5 +547,6 @@ def main(args):
 
 if __name__ == '__main__':
     args = parse_opt()
+    mp.set_start_method('spawn')
     main(args)
 

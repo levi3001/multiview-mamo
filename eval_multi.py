@@ -111,7 +111,13 @@ if __name__ == '__main__':
     if args['weights'] is not None:
         model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE,norm = args['norm'], coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
-        model.load_state_dict(checkpoint['model_state_dict'])
+        checkpoint1 = {}
+        for key in checkpoint['model_state_dict']:
+            if key.split('.')[0] == 'module':
+                checkpoint1[key[7:]]= checkpoint['model_state_dict'][key]
+            else:
+                checkpoint1[key] = checkpoint['model_state_dict'][key]
+        model.load_state_dict(checkpoint1)
         if dataset_name == 'vindr_mammo':
             valid_dataset = create_valid_dataset_multi(
                 VALID_DIR_IMAGES, 
