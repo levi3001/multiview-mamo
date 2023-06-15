@@ -194,6 +194,8 @@ def parse_opt():
 
 def main(args):
     # Initialize distributed mode.
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "29500"
     utils.init_distributed_mode(args)
 
     # Load the data configurations

@@ -359,14 +359,14 @@ class CustomDataset1(Dataset):
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)
         #print(target)
-        if target['boxes'].shape[0]>0:
-            xmin, ymin, xmax, ymax = target['boxes'][0]
-            img=image.permute(1,2,0).numpy().copy()
-            print(img.shape)
-            img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
+        # if target['boxes'].shape[0]>0:
+        #     xmin, ymin, xmax, ymax = target['boxes'][0]
+        #     img=image.permute(1,2,0).numpy().copy()
+        #     print(img.shape)
+        #     img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
             
-            plt.imsave(f'test{idx}.png',img.astype(np.uint8))
-        print(image.shape)
+        #     plt.imsave(f'test{idx}.png',img.astype(np.uint8))
+        # print(image.shape)
         return image, target
 
     def __len__(self):
