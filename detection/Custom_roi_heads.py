@@ -7,7 +7,7 @@ from torch import nn, Tensor
 from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection.roi_heads import RoIHeads 
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
-from detection.loss import fastrcnn_loss1, Mix_loss
+from detection.loss import fastrcnn_loss1, Mix_loss, Focal_loss_l1
 
 
 
@@ -56,8 +56,17 @@ class Custom_roi_heads(RoIHeads):
         keypoint_roi_pool=None,
         keypoint_head=None,
         keypoint_predictor=None)
+        
         self.loss_type = loss_type
-                
+        if self.loss_type == 'fasterrcnn1':
+                self.loss_func = fastrcnn_loss1
+        elif self.loss_type == 'mix':
+            self.loss_func = Mix_loss
+        elif self.loss_type =='focalloss':
+            self.loss_func= Focal_loss_l1
+        else:
+            print('wrong loss')
+            raise Exception()                
     def postprocess_detections(
         self,
         class_logits,  # type: Tensor
@@ -164,18 +173,12 @@ class Custom_roi_heads(RoIHeads):
                 raise ValueError("labels cannot be None")
             if regression_targets is None:
                 raise ValueError("regression_targets cannot be None")
-            if self.loss_type == 'fasterrcnn1':
-                loss_func = fastrcnn_loss1
-            elif self.loss_type == 'mix':
-                loss_func = Mix_loss
+            if self.loss_type == 'mix':
                 box_regression = self.box_coder.decode(box_regression, proposals)
                 regression_targets = torch.cat(regression_targets, dim=0)
                 regression_targets = self.box_coder.decode(regression_targets, proposals).squeeze(1)
                 #print(regression_targets.shape)
-            else:
-                print('wrong loss')
-                raise Exception()
-            loss_classifier, loss_box_reg = loss_func(class_logits, box_regression, labels, regression_targets)
+            loss_classifier, loss_box_reg = self.loss_func(class_logits, box_regression, labels, regression_targets)
             losses = {"loss_classifier": loss_classifier, "loss_box_reg": loss_box_reg}
         else:
             boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
