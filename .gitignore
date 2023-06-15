@@ -13,3 +13,6 @@ wandb/*
 
 # IPython checkpoints
 .ipynb_checkpoints
+
+#image
+.png
