@@ -247,24 +247,20 @@ class Multi_roi_heads(RoIHeads):
                 raise ValueError("labels cannot be None")
             if regression_targets_CC is None or regression_targets_MLO is None:
                 raise ValueError("regression_targets cannot be None")
-            if self.loss_type == 'fasterrcnn1':
-                loss_func = fastrcnn_loss1
-            elif self.loss_type == 'mix':
-                loss_func = Mix_loss
+            
+            if self.loss_type == 'mix':
                 box_regression_CC = self.box_coder.decode(box_regression_CC, proposals_CC)
                 regression_targets_CC = torch.cat(regression_targets_CC, dim =0)
                 regression_targets_CC = self.box_coder.decode(regression_targets_CC, proposals_CC).squeeze(1)
                 box_regression_MLO = self.box_coder.decode(box_regression_MLO, proposals_MLO)
                 regression_targets_MLO = torch.cat(regression_targets_MLO, dim=0)
                 regression_targets_MLO = self.box_coder.decode(regression_targets_MLO, proposals_MLO).squeeze(1)
-            else:
-                print('wrong loss')
-                raise Exception()
+
             
             if torch.any(torch.isnan(class_logits_CC)):
                 print('finding nan')
-            loss_classifier_CC, loss_box_reg_CC = loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
-            loss_classifier_MLO, loss_box_reg_MLO = loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
+            loss_classifier_CC, loss_box_reg_CC = self.loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
+            loss_classifier_MLO, loss_box_reg_MLO = self.loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
             loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }
             loss_MLO = {"loss_classifier": loss_classifier_MLO, "loss_box_reg": loss_box_reg_MLO}
         else:
