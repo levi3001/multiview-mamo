@@ -75,6 +75,7 @@ class TwoviewTransformerDecoder(nn.Module):
                            tgt_key_padding_mask=CC_key_padding_mask,
                            memory_key_padding_mask=MLO_key_padding_mask,
                            pos=MLO_pos, query_pos=CC_pos)
+            #h= layer_CC_MLO.linear1.weight.register_hook(lambda grad: print(grad))
             roi_MLO1 = layer_MLO_CC(roi_MLO, roi_CC, tgt_mask=MLO_mask,
                            memory_mask=CC_mask,
                            tgt_key_padding_mask=MLO_key_padding_mask,

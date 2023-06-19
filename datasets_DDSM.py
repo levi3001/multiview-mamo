@@ -334,9 +334,8 @@ class DDSMDataset1(Dataset):
         target["image_id"] = image_id
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)
-        if lat =='L':
+        if lat =='LEFT':
             image, target = Flip(img= image, target = target)
-            
         image, target = self.transforms(image = image, target = target)
 
         #image = sample['image']
@@ -347,12 +346,19 @@ class DDSMDataset1(Dataset):
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.float32)
         #print(target)
-        # if target['boxes'].shape[0]>0:
-        #     xmin, ymin, xmax, ymax = target['boxes'][0]
-        #     img =cv2.rectangle(img = np.array(image), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
-        #     print(img.max())
-        #     plt.imsave(f'test{idx}.png',img.astype(np.uint8))
+        if target['boxes'].shape[0]>0:
+            print(lat)
+            print(idx)
+            print(self.image_id['path'][idx])
+            xmin, ymin, xmax, ymax = target['boxes'][0]
+            img=image.permute(1,2,0).numpy().copy()
+            print(img.shape)
+            img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
+            
+            plt.imsave(f'test{idx}.png',img.astype(np.uint8))
+        # print(image.shape)
         return image, target
+
 
     def __len__(self):
         return len(self.image_id['image_id'])
@@ -452,6 +458,7 @@ class TwoviewDDSMDataset1(Dataset):
             lat = 'RIGHT'
         else:
             lat = 'LEFT'
+
         study_id= self.study_id[int(index/2)]
         image_name = self.image_id[self.image_id['cases']== study_id]
         image_name= image_name[image_name['view']== view]
@@ -617,7 +624,7 @@ class TwoviewDDSMDataset1(Dataset):
         # sample = self.transforms(image=image,
         #                          bboxes=target['boxes'],
         #                          labels=labels)
-        if lat == 'L':
+        if lat == 'LEFT':
             image, target= Flip(img= image, target = target)
         image, target = self.transforms(image = image, target = target)
         #image = sample['image']
@@ -627,11 +634,17 @@ class TwoviewDDSMDataset1(Dataset):
         # see https://discuss.pytorch.org/t/fasterrcnn-images-with-no-objects-present-cause-an-error/117974/4
         if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
             target['boxes'] = torch.zeros((0, 4), dtype=torch.int64)
-        #print(target)
         # if target['boxes'].shape[0]>0:
+        #     print(int(idx/2))
+        #     print(lat)
+        #     print(idx)
+        #     print(view)
+        #     print(self.image_id['path'][idx])
         #     xmin, ymin, xmax, ymax = target['boxes'][0]
-        #     img =cv2.rectangle(img = np.array(image), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
-        #     print(img.max())
+        #     img=image.permute(1,2,0).numpy().copy()
+        #     print(img.shape)
+        #     img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
+            
         #     plt.imsave(f'test{idx}.png',img.astype(np.uint8))
         return image, target
     def __getitem__(self, idx):

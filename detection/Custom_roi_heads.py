@@ -195,31 +195,3 @@ class Custom_roi_heads(RoIHeads):
 
         return result, losses
 
-# Implementation from https://github.com/xingyizhou/CenterNet2/blob/master/projects/CenterNet2/centernet/modeling/roi_heads/custom_fast_rcnn.py#L113  # noqa
-# with slight modifications
-#Detectron2
-def sigmoid_cross_entropy_loss( pred_class_logits, gt_classes):
-    """
-    Args:
-        pred_class_logits: shape (N, K+1), scores for each of the N box. Each row contains the
-        scores for K object categories and 1 background class
-        gt_classes: a long tensor of shape R that contains the gt class label of each proposal.
-    """
-    if pred_class_logits.numel() == 0:
-        return pred_class_logits.new_zeros([1])[0]
-
-    N = pred_class_logits.shape[0]
-    K = pred_class_logits.shape[1] - 1
-
-    target = pred_class_logits.new_zeros(N, K + 1)
-    target[range(len(gt_classes)), gt_classes] = 1
-    target = target[:, 1:]
-
-    cls_loss = F.binary_cross_entropy_with_logits(
-        pred_class_logits[:, 1:], target, reduction="none"
-    )
-
-    weight = 1
-
-    loss = torch.sum(cls_loss * weight) / N
-    return loss

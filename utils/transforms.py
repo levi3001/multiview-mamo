@@ -224,6 +224,7 @@ class RandomHorizontalFlip(object):
 
     def __call__(self, img, target):
         if random.random() < self.p:
+
             return hflip(img, target)
         return img, target
 
