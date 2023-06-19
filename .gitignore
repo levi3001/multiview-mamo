@@ -12,7 +12,7 @@ weights/
 wandb/*
 
 # IPython checkpoints
-.ipynb_checkpoints
+*.ipynb_checkpoints
 
 #image
-.png
+*.png
