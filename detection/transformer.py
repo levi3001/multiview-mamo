@@ -23,8 +23,11 @@ class CrossviewTransformer(nn.Module):
         super().__init__()
         self.use_self_attn =use_self_attn
 
-        decoder_layer = TransformerDecoderLayer(d_model, nhead, dim_feedforward,
-                                                dropout, activation, normalize_before, use_self_attn)
+        decoder_layer0 = nn.ModuleList([TransformerDecoderLayer(d_model, nhead, dim_feedforward,
+                                                dropout, activation, normalize_before, use_self_attn) for i in range(num_decoder_layers)])
+        decoder_layer1 = nn.ModuleList([TransformerDecoderLayer(d_model, nhead, dim_feedforward,
+                                                dropout, activation, normalize_before, use_self_attn) for i in range(num_decoder_layers)])
+        decoder_layer = nn.ModuleList([decoder_layer0, decoder_layer1])
         decoder_norm1 = nn.LayerNorm(d_model)
         decoder_norm2 = nn.LayerNorm(d_model)
         self.decoder = TwoviewTransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm1, decoder_norm2,
@@ -51,8 +54,8 @@ class TwoviewTransformerDecoder(nn.Module):
 
     def __init__(self, decoder_layer, num_layers, norm1=None, norm2 = None, return_intermediate=False):
         super().__init__()
-        self.layers = _get_clones(decoder_layer, num_layers)
-        
+        #self.layers = _get_clones(decoder_layer, num_layers)
+        self.layers = decoder_layer
         self.num_layers = num_layers
         self.norm1 = norm1
         self.norm2 = norm2
@@ -75,18 +78,19 @@ class TwoviewTransformerDecoder(nn.Module):
                            tgt_key_padding_mask=CC_key_padding_mask,
                            memory_key_padding_mask=MLO_key_padding_mask,
                            pos=MLO_pos, query_pos=CC_pos)
-            #h= layer_CC_MLO.linear1.weight.register_hook(lambda grad: print(grad))
+            #h= layer_CC_MLO.linear1.weight.register_hook(lambda grad: print(grad is not None, i) )
             roi_MLO1 = layer_MLO_CC(roi_MLO, roi_CC, tgt_mask=MLO_mask,
                            memory_mask=CC_mask,
                            tgt_key_padding_mask=MLO_key_padding_mask,
                            memory_key_padding_mask=CC_key_padding_mask,
                            pos=CC_pos, query_pos=MLO_pos)
-
+            roi_CC = roi_CC1
+            roi_MLO = roi_MLO1
         if self.norm1 is not None:
-            roi_CC1 = self.norm1(roi_CC1)
-            roi_MLO1 = self.norm2(roi_MLO1)
+            roi_CC = self.norm1(roi_CC)
+            roi_MLO = self.norm2(roi_MLO)
 
-        return roi_CC1, roi_MLO1
+        return roi_CC, roi_MLO
 
 
 

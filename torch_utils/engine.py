@@ -253,9 +253,9 @@ def train_one_epoch_multi(
         else:
             losses.backward()
             optimizer.step()
-        # for n, p in model.named_parameters():
-        #     if p.grad is None:
-        #         print(f'{n} has no grad')
+        for n, p in model.named_parameters():
+            if p.grad is None:
+                print(f'{n} has no grad')
         if lr_scheduler is not None:
             lr_scheduler.step()
 
