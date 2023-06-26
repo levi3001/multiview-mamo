@@ -107,8 +107,9 @@ class TransformerDecoderLayer(nn.Module):
         self.linear2 = nn.Linear(dim_feedforward, d_model)
         self.use_self_attn = use_self_attn
         if self.use_self_attn:
-            self.self_attn =  nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+            self.self_attn =  nn.MultiheadAttention(d_model, nhead, dropout=dropout,  batch_first= True)
             self.norm1 = nn.LayerNorm(d_model)
+            self.dropout1 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
 

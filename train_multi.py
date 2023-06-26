@@ -22,7 +22,7 @@ from datasets import (
 from datasets_DDSM import(
     create_train_dataset_DDSM_multi, create_test_dataset_DDSM, create_valid_dataset_DDSM_multi
 )
-from models_multiview.multiview_detector import create_model
+from models_multiview.create_multiview_model import create_model
 from utils.general import (
     set_training_dir, Averager, 
     save_model, save_loss_plot,
@@ -62,7 +62,7 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-m', '--model', 
-        default='fasterrcnn_resnet50_fpn_v2',
+        default='multiview_detector',
         help='name of the model'
     )
     parser.add_argument(
@@ -299,7 +299,7 @@ def main(args):
 
     if args['weights'] is None:
         print('Building model from scratch...')
-        build_model = create_model
+        build_model = create_model[args['model']]
         model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'], loss_type= args['loss'])
 
     # Load pretrained weights if path is provided.
@@ -314,7 +314,7 @@ def main(args):
         old_classes = ckpt_state_dict['roi_heads.box_predictor.cls_score.weight'].shape[0]
 
         # Build the new model with number of classes same as checkpoint.
-        build_model = create_model
+        build_model = create_model[args['model']]
         model = build_model(num_classes=old_classes, use_self_attn= args['use_self_attn'])
         # Load weights.
         model.load_state_dict(ckpt_state_dict)

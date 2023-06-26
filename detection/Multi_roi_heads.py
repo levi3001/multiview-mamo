@@ -1,5 +1,6 @@
 from typing import Dict, List, Optional, Tuple
 import math
+from collections import OrderedDict
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -288,7 +289,7 @@ class Multi_roi_heads(RoIHeads):
 
         return result_CC, result_MLO, loss_CC, loss_MLO
 
-class Multi_concat_roi_heads(Multi_roi_heads):
+class Multi_concat_roi_heads(RoIHeads):
     def __init__(self,
         box_roi_pool,
         box_head,
@@ -378,35 +379,18 @@ class Multi_concat_roi_heads(Multi_roi_heads):
             regression_targets_MLO = None
             matched_idxs_CC = None
             matched_idxs_MLO = None
-        box_features_CC = self.box_roi_pool(feat_CC, proposals_CC, image_shapes_CC)
-        box_features_MLO = self.box_roi_pool(feat_MLO, proposals_MLO, image_shapes_MLO)
+        feat_CC1 = OrderedDict()
+        feat_MLO1 = OrderedDict()
+        for key in feat_CC:
+            feat_CC1[key] = torch.cat((feat_CC[key], feat_MLO[key]), dim=1)
+            feat_MLO1[key] = torch.cat((feat_MLO[key], feat_CC[key]), dim=1)
+        box_features_CC = self.box_roi_pool(feat_CC1, proposals_CC, image_shapes_CC)
+        box_features_MLO = self.box_roi_pool(feat_MLO1, proposals_MLO, image_shapes_MLO)
 
         box_features_CC = self.box_head(box_features_CC)
         box_features_MLO =self.box_head(box_features_MLO)
-        boxes_per_image_CC = [boxes_in_image.shape[0] for boxes_in_image in proposals_CC]
-        boxes_per_image_MLO = [boxes_in_image.shape[0] for boxes_in_image in proposals_MLO]
-        box_features_CC = box_features_CC.split(boxes_per_image_CC, 0)
-        box_features_MLO = box_features_MLO.split(boxes_per_image_MLO, 0)
-        
-        box_features_CC,  CC_key_padding_mask = pad_sequence(box_features_CC)
-        box_features_MLO,  MLO_key_padding_mask = pad_sequence(box_features_MLO)
-        
-        CC_pos = self.pos_encode(proposals_CC)
-        MLO_pos = self.pos_encode(proposals_MLO)
-        CC_pos, _ = pad_sequence(CC_pos)
-        MLO_pos, _ = pad_sequence(MLO_pos)
-        
-        #CC_key_padding_mask = box_features_CC == 0
-        #MLO_key_padding_mask = box_features_MLO == 0
-        
-        box_features_CC, box_features_MLO = self.crossview(box_features_CC, box_features_MLO, CC_key_padding_mask, MLO_key_padding_mask,\
-            CC_pos= CC_pos, MLO_pos= MLO_pos)
-        
-        box_features_CC = box_features_CC[~CC_key_padding_mask]
-        box_features_MLO = box_features_MLO[~MLO_key_padding_mask]
         class_logits_CC, box_regression_CC = self.box_predictor(box_features_CC)
         class_logits_MLO, box_regression_MLO = self.box_predictor(box_features_MLO)
-
 
         result_CC: List[Dict[str, torch.Tensor]] = []
         result_MLO: List[Dict[str, torch.Tensor]] = []

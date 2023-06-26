@@ -64,14 +64,14 @@ def sigmoid_cross_entropy_loss( pred_class_logits, gt_classes):
 
     target = pred_class_logits.new_zeros(N, K + 1)
     target[range(len(gt_classes)), gt_classes] = 1
-    #target = target[:, 1:]
+    target = target[:, 1:]
 
-    # cls_loss = F.binary_cross_entropy_with_logits(
-    #     pred_class_logits[:, 1:], target, reduction="none"
-    # )
     cls_loss = F.binary_cross_entropy_with_logits(
-        pred_class_logits, target, reduction="none"
+        pred_class_logits[:, 1:], target, reduction="none"
     )
+    # cls_loss = F.binary_cross_entropy_with_logits(
+    #     pred_class_logits, target, reduction="none"
+    # )
     
     weight = 1
 

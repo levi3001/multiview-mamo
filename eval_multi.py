@@ -10,7 +10,7 @@ from datasets import (
 from datasets_DDSM import (
     create_test_dataset_DDSM_multi
 )
-from models_multiview.multiview_detector import create_model
+from models_multiview.create_multiview_model import create_model
 from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from pprint import pprint
@@ -76,6 +76,12 @@ if __name__ == '__main__':
         help='normalization type'
     )
     
+    parser.add_argument(
+        '--use-self-attn',
+        dest='use_self_attn',
+        action='store_true',
+    )
+        
     args = vars(parser.parse_args())
 
     # Load the data configurations
@@ -99,17 +105,10 @@ if __name__ == '__main__':
     # Model configurations
     IMAGE_SIZE = args['imgsz']
 
-    # Load the pretrained model
-    if args['weights'] is None:
-        try:
-            model, coco_model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
-        except:
-            model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE, coco_model=True)
-
-
+    build_model = create_model[args['model']]
     # Load weights.
     if args['weights'] is not None:
-        model = create_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE,norm = args['norm'], coco_model=False)
+        model = build_model(num_classes=NUM_CLASSES, size= IMAGE_SIZE,norm = args['norm'], use_self_attn= args['use_self_attn'], coco_model=False)
         checkpoint = torch.load(args['weights'], map_location=DEVICE)
         checkpoint1 = {}
         for key in checkpoint['model_state_dict']:
