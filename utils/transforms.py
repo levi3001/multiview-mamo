@@ -11,6 +11,8 @@ import torchvision.transforms.functional as F
 import torchvision
 import matplotlib.pyplot as plt
 import numpy as np
+import albumentations as A
+from PIL import Image
 __torchvision_need_compat_flag = float(torchvision.__version__.split('.')[1]) < 7
 if __torchvision_need_compat_flag:
     from torchvision.ops import _new_empty_tensor
@@ -334,3 +336,20 @@ class Breast_crop(object):
         i = max(1, thres-500)
         img, target = crop(img, target, (0,j,h-i,w-j))
         return img, target
+    
+class Gaussian_noise(object):
+    def __init__(self):  
+        self.transform = A.GaussNoise()
+    def __call__(self, img, target):
+        img_np = np.array(img)
+        boxes_raw = target['boxes']
+        labels_raw = target['labels']
+        new_res = self.transform(image=img_np, bboxes=boxes_raw, class_labels=labels_raw)  # transformed
+        boxes_new = torch.Tensor(new_res['bboxes']).to(boxes_raw.dtype).reshape_as(boxes_raw)
+        img_np = new_res['image']
+        labels_new = torch.Tensor(new_res['class_labels']).to(labels_raw.dtype)
+        img_new = Image.fromarray(img_np)
+        target['boxes'] = boxes_new
+        target['labels'] = labels_new
+        
+        return img_new, target

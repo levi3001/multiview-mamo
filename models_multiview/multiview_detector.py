@@ -1,7 +1,12 @@
 import warnings
 from collections import OrderedDict
 from typing import Dict, List, Optional, Tuple, Union
+import matplotlib.pyplot as plt
+import cv2
+from utils import transforms as T
 
+
+import numpy as np
 import torch 
 import torchvision
 from torch import nn, Tensor
@@ -38,6 +43,14 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
             original_image_sizes.append((val[0], val[1]))
 
         images, targets = self.transform(images, targets)
+        # if targets[0]['boxes'].shape[0]>0:
+        #     xmin, ymin, xmax, ymax = targets[0]['boxes'][0]
+        #     img=images.tensors[0].permute(1,2,0).cpu().numpy().copy()
+        #     img= img*np.array([ 0.229, 0.224, 0.225])+np.array([0.485 , 0.456, 0.406 ])
+        #     print(img.shape)
+        #     img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
+        #     plt.imshow(img)
+        #     plt.show()
         # Check for degenerate boxes
         # TODO: Move this to a function
         if targets is not None:
