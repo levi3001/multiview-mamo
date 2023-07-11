@@ -11,8 +11,9 @@ python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/v
 python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --use-train-aug --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
 """
 from torch_utils.engine import (
-    train_one_epoch, evaluate, utils
+    train_one_epoch, utils
 )
+from eval import evaluate
 from torch.utils.data import (
     distributed, RandomSampler, SequentialSampler
 )
@@ -394,7 +395,7 @@ def main(args):
     save_best_model = SaveBestModel()
 
     #coco evaluate 
-    coco = get_coco_api_from_dataset(valid_loader)
+    #coco = get_coco_api_from_dataset(valid_loader)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
@@ -413,18 +414,15 @@ def main(args):
             scheduler=scheduler
         )
         if epoch% args['eval_frequent'] ==0:
-            stats, val_pred_image = evaluate(
+            stats = evaluate(
                 model, 
                 valid_loader, 
-                coco,
                 device=DEVICE,
-                save_valid_preds=SAVE_VALID_PREDICTIONS,
-                out_dir=OUT_DIR,
+                num_classes = NUM_CLASSES,
                 classes=CLASSES,
-                colors=COLORS
             )
-            val_map_05.append(stats[1])
-            val_map.append(stats[0])        
+            val_map_05.append(stats[2])
+            val_map.append(stats[1])        
             # Save mAP plots.
             save_mAP(OUT_DIR, val_map_05, val_map)
             # Save mAP plot using TensorBoard.
@@ -502,7 +500,7 @@ def main(args):
 
 
 
-        coco_log(OUT_DIR, stats)
+        #coco_log(OUT_DIR, stats)
         csv_log(
             OUT_DIR, 
             stats, 
