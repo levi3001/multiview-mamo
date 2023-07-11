@@ -27,6 +27,63 @@ import numpy as np
 from torch_utils import froc
 torch.multiprocessing.set_sharing_strategy('file_system')
 
+
+
+@torch.inference_mode()
+def evaluate(
+    model, 
+    data_loader, 
+    device, 
+    num_classes =2,
+    out_dir=None,
+    classes=None,
+    colors=None
+):
+    n_threads = torch.get_num_threads()
+    # FIXME remove this and make paste_masks_in_image run on the GPU
+    torch.set_num_threads(1)
+    cpu_device = torch.device("cpu")
+    model.eval()
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    header = "Test:"
+
+    target = []
+    preds = []
+    counter = 0
+    for images, targets in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
+        counter += 1
+        images = list(img.to(device) for img in images)
+
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        model_time = time.time()
+        with torch.no_grad():
+            outputs = model(images)
+            #print('out',outputs)
+            #print('tar',targets)
+        #####################################
+        for i in range(len(images)):
+            true_dict = dict()
+            preds_dict = dict()
+            true_dict['boxes'] = targets[i]['boxes'].detach().cpu()
+            true_dict['labels'] = targets[i]['labels'].detach().cpu()
+            preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
+            preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
+            preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
+            preds.append(preds_dict)
+            target.append(true_dict)
+        #####################################
+
+        outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
+    # gather the stats from all processes
+    metric_logger.synchronize_between_processes()
+    torch.set_num_threads(n_threads)
+    #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
+    metric = froc.FROC(num_classes, classes, threshold=[0.25,0.5,1,2,4], view ='all')
+    #metric.update(preds, target)
+    #metric_summary = metric.compute()
+    metric_summary = metric.compute(preds,target)
+    return metric_summary
 if __name__ == '__main__':
     # Construct the argument parser.
     parser = argparse.ArgumentParser()
@@ -138,61 +195,7 @@ if __name__ == '__main__':
     
     valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS)
 
-    @torch.inference_mode()
-    def evaluate(
-        model, 
-        data_loader, 
-        device, 
-        num_classes =2,
-        out_dir=None,
-        classes=None,
-        colors=None
-    ):
-        n_threads = torch.get_num_threads()
-        # FIXME remove this and make paste_masks_in_image run on the GPU
-        torch.set_num_threads(1)
-        cpu_device = torch.device("cpu")
-        model.eval()
-        metric_logger = utils.MetricLogger(delimiter="  ")
-        header = "Test:"
-
-        target = []
-        preds = []
-        counter = 0
-        for images, targets in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
-            counter += 1
-            images = list(img.to(device) for img in images)
-
-            if torch.cuda.is_available():
-                torch.cuda.synchronize()
-            model_time = time.time()
-            with torch.no_grad():
-                outputs = model(images)
-                #print('out',outputs)
-                #print('tar',targets)
-            #####################################
-            for i in range(len(images)):
-                true_dict = dict()
-                preds_dict = dict()
-                true_dict['boxes'] = targets[i]['boxes'].detach().cpu()
-                true_dict['labels'] = targets[i]['labels'].detach().cpu()
-                preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
-                preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
-                preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
-                preds.append(preds_dict)
-                target.append(true_dict)
-            #####################################
-
-            outputs = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs]
-        # gather the stats from all processes
-        metric_logger.synchronize_between_processes()
-        torch.set_num_threads(n_threads)
-        #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
-        metric = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], view ='all')
-        #metric.update(preds, target)
-        #metric_summary = metric.compute()
-        metric_summary = metric.compute(preds,target)
-        return metric_summary
+ 
 
     stats = evaluate(
         model, 
