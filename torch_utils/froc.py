@@ -227,7 +227,7 @@ class FROC():
                 self.threshold, self.threshold, fontsize=20,
             )
         marker = [None,'*--','.--','+--','o--','>--', '<--']
-
+        output= {}
         for category_id in lls_accuracy:
             lls = lls_accuracy[category_id]
             nlls = nlls_per_image[category_id]
@@ -246,9 +246,19 @@ class FROC():
                     y.append(lls[i])
             print(len(x), len(y))
             print(self.classes[category_id], np.interp( self.threshold, x[::-1], y[::-1]))
+            output[self.classes[category_id]]= np.interp( self.threshold, x[::-1], y[::-1])
+        count=0
+        output['avg'] = np.zeros(len(self.threshold))
+        for key in output:
+            if key!= 'avg':
+                count+=1
+                output['avg']+= output[key]
+        output['avg'] = output['avg']/count   
+        print(output)
         ax.legend(loc = 'best', fontsize = 20)
         ax.set_title(self.plot_title, fontsize=40)
         ax.set_xlabel('False positive per image (FPPI)', fontsize=30)
         ax.set_ylabel('Recall', fontsize=30)
         plt.xlim([0,5])
         plt.savefig(f'result_{self.view}.png')
+        return  output['avg']
