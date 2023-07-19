@@ -89,7 +89,9 @@ def Focal_loss(class_logits,  labels):
 
     target = class_logits.new_zeros(N, K + 1)
     target[range(len(labels)), labels] = 1
-    loss = sigmoid_focal_loss(class_logits, target, reduction = 'mean')
+    target = target[:, 1:]
+    loss = sigmoid_focal_loss(class_logits[:, 1:], target, reduction = 'sum')
+    loss = loss/N
     return loss 
 def DIOU_loss(box_regression, regression_targets):
    return distance_box_iou_loss(box_regression, regression_targets, reduction = 'sum')

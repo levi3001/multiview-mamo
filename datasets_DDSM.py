@@ -26,6 +26,8 @@ def train_transform(size):
     return T.Compose([
     T.RandomResize([size]),
     T.RandomHorizontalFlip(p=0.2),
+    T.RandomVerticalFlip(p=0.2),
+    T.Scale_box(),
     T.Gaussian_noise(),
     T.ToTensor(),
     #T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -181,7 +183,7 @@ class DDSMDataset1(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -412,7 +414,7 @@ class DDSMDataset2(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -698,7 +700,7 @@ class TwoviewDDSMDataset1(Dataset):
         path= self.image_id[self.image_id['image_id']== image_name]['path'].values[0]
         # Read the image
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
 
         # Convert BGR to RGB color format.
         
@@ -960,7 +962,7 @@ class TwoviewDataset(Dataset):
         image_path = os.path.join(self.images_path, str(study_id)+'/'+str(image_name)+ '.dicom')
 
         # Read the image.
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
         # Convert BGR to RGB color format.
         
         # Capture the corresponding XML file for getting the annotations.

@@ -105,6 +105,25 @@ def hflip(image, target):
 
     return flipped_image, target
 
+def vflip(image, target):
+    flipped_image = F.vflip(image)
+
+    w, h = image.size
+
+    target = target.copy()
+    if "boxes" in target:
+        boxes = target["boxes"]
+        #print(boxes.shape)
+        boxes = boxes[:, [0, 3, 2, 1]] * torch.as_tensor([1, -1, 1, -1]) + torch.as_tensor([0, h, 0, h])
+        #print(boxes)
+        target["boxes"] = boxes
+
+    if "masks" in target:
+        target['masks'] = target['masks'].flip(-1)
+
+    return flipped_image, target
+
+
 
 def resize(image, target, size, max_size=None):
     # size can be min_size (scalar) or (w, h) tuple
@@ -230,7 +249,16 @@ class RandomHorizontalFlip(object):
             return hflip(img, target)
         return img, target
 
+class RandomVerticalFlip(object):
+    def __init__(self, p=0.5):
+        self.p = p
 
+    def __call__(self, img, target):
+        if random.random() < self.p:
+
+            return vflip(img, target)
+        return img, target
+    
 class RandomResize(object):
     def __init__(self, sizes, max_size=None):
         assert isinstance(sizes, (list, tuple))
@@ -353,3 +381,22 @@ class Gaussian_noise(object):
         target['labels'] = labels_new
         
         return img_new, target
+    
+class Scale_box(object):
+    def __init__(self, range=[0.8, 1.2], p=0.5):
+        self.range= range
+        self.p= p
+    def __call__(self, img, target):
+        if random.random() < self.p:
+            x1, y1, x2, y2 =target['boxes'].unbind(-1)
+            cx, cy = (x1+x2)/2, (y1+y2)/2
+            w, h = x2-x1, y2-y1 
+            l, h =self.range
+            scale= (h-l)*torch.rand(len(x1))+l
+            new_w, new_h = w*scale, h*scale
+            new_x1, new_y1, new_x2, new_y2 = cx-new_w/2, cy-new_h/2, cx + new_w/2, cy+new_h/2 
+            b = [new_x1, new_y1, new_x2, new_y2]
+            target['boxes'] = torch.stack(b, axis=-1)
+            return img, target
+        return img, target
+        

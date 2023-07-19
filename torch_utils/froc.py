@@ -199,7 +199,7 @@ class FROC():
     def compute(self, preds, targets):
         lls_accuracy = {}
         nlls_per_image = {}
-        thres_list = np.linspace(0,1e-3,100, endpoint= True)
+        thres_list = np.linspace(0,1e-3,10, endpoint= True)
         thres_list2 = np.linspace(1e-3,1,1000)
         thres_list = np.append(thres_list, thres_list2[1:])
         print(thres_list)

@@ -27,6 +27,7 @@ def train_transform(size):
     return T.Compose([
     T.Breast_crop(),
     T.RandomHorizontalFlip(p=0.2),
+    #T.RandomVerticalFlip(p=0.2),
     T.Gaussian_noise(),
     T.RandomResize([size]),
     T.ToTensor(),
