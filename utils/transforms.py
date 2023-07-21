@@ -391,8 +391,8 @@ class Scale_box(object):
             x1, y1, x2, y2 =target['boxes'].unbind(-1)
             cx, cy = (x1+x2)/2, (y1+y2)/2
             w, h = x2-x1, y2-y1 
-            l, h =self.range
-            scale= (h-l)*torch.rand(len(x1))+l
+            lo, hi =self.range
+            scale= (hi-lo)*torch.rand(len(x1))+lo
             new_w, new_h = w*scale, h*scale
             new_x1, new_y1, new_x2, new_y2 = cx-new_w/2, cy-new_h/2, cx + new_w/2, cy+new_h/2 
             b = [new_x1, new_y1, new_x2, new_y2]
