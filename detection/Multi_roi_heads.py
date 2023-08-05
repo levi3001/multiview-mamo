@@ -96,13 +96,13 @@ class Multi_roi_heads(RoIHeads):
         
         
         self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
-        self.pos_encode = PositionEmbeddingSine(512)
+        self.pos_encode = PositionEmbeddingSine(256)
         self.loss_type =loss_type 
         if self.loss_type == 'fasterrcnn1':
                 self.loss_func = fastrcnn_loss1
         elif self.loss_type == 'mix':
             self.loss_func = Mix_loss
-        elif self.loss_type == 'focal_loss':
+        elif self.loss_type == 'focal':
             self.loss_func= Focal_loss_l1
         else:
             print('wrong loss')
@@ -226,7 +226,8 @@ class Multi_roi_heads(RoIHeads):
         MLO_pos = self.pos_encode(proposals_MLO)
         CC_pos, _ = pad_sequence(CC_pos)
         MLO_pos, _ = pad_sequence(MLO_pos)
-        
+        #CC_pos= None 
+        #MLO_pos =None
         #CC_key_padding_mask = box_features_CC == 0
         #MLO_key_padding_mask = box_features_MLO == 0
         

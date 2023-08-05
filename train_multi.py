@@ -11,8 +11,9 @@ python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/v
 python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --use-train-aug --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
 """
 from torch_utils.engine import (
-    train_one_epoch_multi, evaluate_multi, utils
+    train_one_epoch_multi, utils
 )
+from eval_multi import evaluate
 from torch.utils.data import (
     distributed, RandomSampler, SequentialSampler
 )
@@ -369,8 +370,10 @@ def main(args):
     params = [p for p in model.parameters() if p.requires_grad]
     # Define the optimizer.
     if args['optimizer'] == 'sgd':
+        print('using sgd')
         optimizer = torch.optim.SGD(params, lr=args['lr'], momentum=0.9, nesterov= False, weight_decay= 1e-4)
     elif args['optimizer'] == 'adam':
+        print('using adam')
         optimizer = torch.optim.AdamW(params, lr=args['lr'], weight_decay=0.001)
     if args['resume_training']: 
         # LOAD THE OPTIMIZER STATE DICTIONARY FROM THE CHECKPOINT.
@@ -393,7 +396,7 @@ def main(args):
 
     save_best_model = SaveBestModel()
     #coco= None
-    coco = get_coco_api_from_dataset_multi(valid_loader)
+    #coco = get_coco_api_from_dataset_multi(valid_loader)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
@@ -438,18 +441,15 @@ def main(args):
             #     writer=writer,
             #     epoch=epoch
             # )
-            stats = evaluate_multi(
+            stats = evaluate(
                 model, 
                 valid_loader, 
-                coco,
                 device=DEVICE,
-                save_valid_preds=SAVE_VALID_PREDICTIONS,
-                out_dir=OUT_DIR,
+                num_classes = NUM_CLASSES,
                 classes=CLASSES,
-                colors=COLORS
             )
-            val_map_05.append(stats[1])
-            val_map.append(stats[0])        
+            val_map_05.append(stats[2])
+            val_map.append(stats[1])        
             # Save mAP plots.
             save_mAP(OUT_DIR, val_map_05, val_map)
             # Save mAP plot using TensorBoard.
@@ -527,7 +527,7 @@ def main(args):
 
 
 
-        coco_log(OUT_DIR, stats)
+        #coco_log(OUT_DIR, stats)
         #coco_log(OUT_DIR, stats_MLO)
         csv_log(
             OUT_DIR, 

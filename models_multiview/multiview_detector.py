@@ -24,7 +24,7 @@ from utils.norm import get_layer, set_layer, LayerNorm2d
 
 class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
     def __init__(self, backbone, num_classes):
-        super().__init__(backbone = backbone, num_classes= num_classes)
+        super().__init__(backbone = backbone, num_classes= num_classes,  rpn_fg_iou_thresh=0.5)
         
     def eager_outputs(self, loss_CC, loss_MLO, detections_CC, detections_MLO):
         if self.training:
@@ -148,11 +148,11 @@ def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, c
 
     if box_head is None:
         resolution = box_roi_pool.output_size[0]
-        representation_size = 1024
+        representation_size = 512
         box_head = TwoMLPHead(out_channels * resolution**2, representation_size)
 
     if box_predictor is None:
-        representation_size = 1024
+        representation_size = 512
         box_predictor = FastRCNNPredictor(representation_size, num_classes)
     model.roi_heads = Multi_roi_heads(
             box_roi_pool,

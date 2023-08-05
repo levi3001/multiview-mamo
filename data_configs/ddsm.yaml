@@ -1,9 +1,9 @@
 # Images and labels direcotry should be relative to train.py
 DATASET: DDSM
-TRAIN_DIR_IMAGES: ../DDSM/ddsm_2015/processed_data_set/
-TRAIN_DIR_LABELS: ../DDSM/ddsm_2015/processed_data_set/
-VALID_DIR_IMAGES: ../DDSM/ddsm_2015/processed_data_set/
-VALID_DIR_LABELS: ../DDSM/ddsm_2015/processed_data_set/
+TRAIN_DIR_IMAGES: /shared/DDSM/DDSM/ddsm_2015/processed_data_set/
+TRAIN_DIR_LABELS: /shared/DDSM/DDSM/ddsm_2015/processed_data_set/
+VALID_DIR_IMAGES: /shared/DDSM/DDSM/ddsm_2015/processed_data_set/
+VALID_DIR_LABELS: /shared/DDSM/DDSM/ddsm_2015/processed_data_set/
 # Class names.
 CLASSES: [
     '__background__',

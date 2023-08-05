@@ -62,7 +62,7 @@ class Custom_roi_heads(RoIHeads):
                 self.loss_func = fastrcnn_loss1
         elif self.loss_type == 'mix':
             self.loss_func = Mix_loss
-        elif self.loss_type =='focalloss':
+        elif self.loss_type =='focal':
             self.loss_func= Focal_loss_l1
         else:
             print('wrong loss')

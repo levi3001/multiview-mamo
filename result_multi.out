@@ -1,0 +1,620 @@
+| distributed init (rank 0): env://
+device cuda
+1507
+258
+Creating data loaders
+Number of validation samples: 516
+
+Building model from scratch...
+ResNet(
+  (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+  (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+  (relu): ReLU(inplace=True)
+  (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+  (layer1): Sequential(
+    (0): Bottleneck(
+      (conv1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+      (relu): ReLU(inplace=True)
+      (downsample): Sequential(
+        (0): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (1): FrozenBatchNorm2d(256, eps=1e-05)
+      )
+    )
+    (1): Bottleneck(
+      (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (2): Bottleneck(
+      (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+      (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer2): Sequential(
+    (0): Bottleneck(
+      (conv1): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+      (relu): ReLU(inplace=True)
+      (downsample): Sequential(
+        (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): FrozenBatchNorm2d(512, eps=1e-05)
+      )
+    )
+    (1): Bottleneck(
+      (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (2): Bottleneck(
+      (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (3): Bottleneck(
+      (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+      (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer3): Sequential(
+    (0): Bottleneck(
+      (conv1): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+      (downsample): Sequential(
+        (0): Conv2d(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): FrozenBatchNorm2d(1024, eps=1e-05)
+      )
+    )
+    (1): Bottleneck(
+      (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (2): Bottleneck(
+      (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (3): Bottleneck(
+      (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (4): Bottleneck(
+      (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (5): Bottleneck(
+      (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+      (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (layer4): Sequential(
+    (0): Bottleneck(
+      (conv1): Conv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+      (relu): ReLU(inplace=True)
+      (downsample): Sequential(
+        (0): Conv2d(1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False)
+        (1): FrozenBatchNorm2d(2048, eps=1e-05)
+      )
+    )
+    (1): Bottleneck(
+      (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+    (2): Bottleneck(
+      (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+      (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+      (relu): ReLU(inplace=True)
+    )
+  )
+  (avgpool): AdaptiveAvgPool2d(output_size=(1, 1))
+  (fc): Linear(in_features=2048, out_features=1000, bias=True)
+)
+DistributedDataParallel(
+  (module): Multiview_fasterrcnn(
+    (transform): GeneralizedRCNNTransform(
+        Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        Resize(min_size=(1000,), max_size=1500, mode='bilinear')
+    )
+    (backbone): BackboneWithFPN(
+      (body): IntermediateLayerGetter(
+        (conv1): Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+        (relu): ReLU(inplace=True)
+        (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+        (layer1): Sequential(
+          (0): Bottleneck(
+            (conv1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+            (relu): ReLU(inplace=True)
+            (downsample): Sequential(
+              (0): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (1): FrozenBatchNorm2d(256, eps=1e-05)
+            )
+          )
+          (1): Bottleneck(
+            (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (2): Bottleneck(
+            (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(64, eps=1e-05)
+            (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(256, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (layer2): Sequential(
+          (0): Bottleneck(
+            (conv1): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+            (relu): ReLU(inplace=True)
+            (downsample): Sequential(
+              (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): FrozenBatchNorm2d(512, eps=1e-05)
+            )
+          )
+          (1): Bottleneck(
+            (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (2): Bottleneck(
+            (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (3): Bottleneck(
+            (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(128, eps=1e-05)
+            (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(512, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (layer3): Sequential(
+          (0): Bottleneck(
+            (conv1): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+            (downsample): Sequential(
+              (0): Conv2d(512, 1024, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): FrozenBatchNorm2d(1024, eps=1e-05)
+            )
+          )
+          (1): Bottleneck(
+            (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (2): Bottleneck(
+            (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (3): Bottleneck(
+            (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (4): Bottleneck(
+            (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (5): Bottleneck(
+            (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(256, eps=1e-05)
+            (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(1024, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+        )
+        (layer4): Sequential(
+          (0): Bottleneck(
+            (conv1): Conv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+            (relu): ReLU(inplace=True)
+            (downsample): Sequential(
+              (0): Conv2d(1024, 2048, kernel_size=(1, 1), stride=(2, 2), bias=False)
+              (1): FrozenBatchNorm2d(2048, eps=1e-05)
+            )
+          )
+          (1): Bottleneck(
+            (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+          (2): Bottleneck(
+            (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn1): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+            (bn2): FrozenBatchNorm2d(512, eps=1e-05)
+            (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn3): FrozenBatchNorm2d(2048, eps=1e-05)
+            (relu): ReLU(inplace=True)
+          )
+        )
+      )
+      (fpn): FeaturePyramidNetwork(
+        (inner_blocks): ModuleList(
+          (0): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (1): Conv2dNormActivation(
+            (0): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (2): Conv2dNormActivation(
+            (0): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (3): Conv2dNormActivation(
+            (0): Conv2d(2048, 256, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+        (layer_blocks): ModuleList(
+          (0): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+          (1): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+          (2): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+          (3): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+          )
+        )
+        (extra_blocks): LastLevelMaxPool()
+      )
+    )
+    (rpn): RegionProposalNetwork(
+      (anchor_generator): AnchorGenerator()
+      (head): RPNHead(
+        (conv): Sequential(
+          (0): Conv2dNormActivation(
+            (0): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU(inplace=True)
+          )
+        )
+        (cls_logits): Conv2d(256, 3, kernel_size=(1, 1), stride=(1, 1))
+        (bbox_pred): Conv2d(256, 12, kernel_size=(1, 1), stride=(1, 1))
+      )
+    )
+    (roi_heads): Multi_roi_heads(
+      (box_roi_pool): MultiScaleRoIAlign(featmap_names=['0', '1', '2', '3'], output_size=(7, 7), sampling_ratio=2)
+      (box_head): TwoMLPHead(
+        (fc6): Linear(in_features=12544, out_features=1024, bias=True)
+        (fc7): Linear(in_features=1024, out_features=1024, bias=True)
+      )
+      (box_predictor): FastRCNNPredictor(
+        (cls_score): Linear(in_features=1024, out_features=3, bias=True)
+        (bbox_pred): Linear(in_features=1024, out_features=12, bias=True)
+      )
+      (crossview): CrossviewTransformer(
+        (decoder): TwoviewTransformerDecoder(
+          (layers): ModuleList(
+            (0): ModuleList(
+              (0): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (1): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (2): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (3): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (4): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (5): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+            )
+            (1): ModuleList(
+              (0): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (1): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (2): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (3): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (4): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+              (5): TransformerDecoderLayer(
+                (multihead_attn): MultiheadAttention(
+                  (out_proj): NonDynamicallyQuantizableLinear(in_features=512, out_features=512, bias=True)
+                )
+                (linear1): Linear(in_features=512, out_features=1024, bias=True)
+                (dropout): Dropout(p=0.1, inplace=False)
+                (linear2): Linear(in_features=1024, out_features=512, bias=True)
+                (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (norm3): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+                (dropout2): Dropout(p=0.1, inplace=False)
+                (dropout3): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (norm1): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+          (norm2): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+      (pos_encode): PositionEmbeddingSine()
+    )
+  )
+)
+66,539,742 total parameters.
+66,539,742 training parameters.
+using adam
+Traceback (most recent call last):
+  File "/vinserver_user/hoang.nc/multiview-mamo/train_multi.py", line 576, in <module>
+    main(args)
+  File "/vinserver_user/hoang.nc/multiview-mamo/train_multi.py", line 407, in main
+    batch_loss_rpn_list = train_one_epoch_multi(
+  File "/vinserver_user/hoang.nc/multiview-mamo/torch_utils/engine.py", line 228, in train_one_epoch_multi
+    loss_dict_CC, loss_dict_MLO = model(images_CC, images_MLO, targets_CC, targets_MLO)
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/parallel/distributed.py", line 1040, in forward
+    output = self._run_ddp_forward(*inputs, **kwargs)
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/parallel/distributed.py", line 1000, in _run_ddp_forward
+    return module_to_run(*inputs[0], **kwargs[0])
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/vinserver_user/hoang.nc/multiview-mamo/models_multiview/multiview_detector.py", line 80, in forward
+    detections_CC, detections_MLO, detector_losses_CC, detector_losses_MLO = self.roi_heads(feat_CC, proposals_CC, image_CC.image_sizes,\
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/vinserver_user/hoang.nc/multiview-mamo/detection/Multi_roi_heads.py", line 234, in forward
+    box_features_CC, box_features_MLO = self.crossview(box_features_CC, box_features_MLO, CC_key_padding_mask, MLO_key_padding_mask,\
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/vinserver_user/hoang.nc/multiview-mamo/detection/transformer.py", line 47, in forward
+    roi_CC, roi_MLO = self.decoder(roi_CC, roi_MLO, CC_key_padding_mask= CC_key_padding_mask , MLO_key_padding_mask = MLO_key_padding_mask,
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/vinserver_user/hoang.nc/multiview-mamo/detection/transformer.py", line 76, in forward
+    roi_CC1 = layer_CC_MLO(roi_CC, roi_MLO, tgt_mask=CC_mask,
+  File "/home/admin/miniconda3/envs/hoang/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1194, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/vinserver_user/hoang.nc/multiview-mamo/detection/transformer.py", line 141, in forward
+    tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
+  File "/vinserver_user/hoang.nc/multiview-mamo/detection/transformer.py", line 123, in with_pos_embed
+    return tensor if pos is None else tensor + pos
+RuntimeError: The size of tensor a (1024) must match the size of tensor b (512) at non-singleton dimension 2
+srun: error: slurmnode2: task 0: Exited with exit code 1

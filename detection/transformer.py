@@ -16,8 +16,8 @@ from torch import nn, Tensor
 
 class CrossviewTransformer(nn.Module):
 
-    def __init__(self, d_model=1024, nhead=8, num_encoder_layers=6,
-                 num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
+    def __init__(self, d_model=512, nhead=8, num_encoder_layers=6,
+                 num_decoder_layers=6, dim_feedforward=1024, dropout=0.1,
                  activation="relu", normalize_before=False,
                  return_intermediate_dec=False, use_self_attn = False):
         super().__init__()
@@ -97,7 +97,7 @@ class TwoviewTransformerDecoder(nn.Module):
 
 class TransformerDecoderLayer(nn.Module):
 
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
+    def __init__(self, d_model, nhead, dim_feedforward=1024, dropout=0.1,
                  activation="relu", normalize_before=False, use_self_attn =False):
         super().__init__()
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first= True)
