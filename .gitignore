@@ -16,3 +16,6 @@ wandb/*
 
 #image
 *.png
+
+#result
+*.out
