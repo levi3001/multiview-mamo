@@ -13,14 +13,35 @@ from torch import nn, Tensor
 from torchvision.models.detection import generalized_rcnn, faster_rcnn, roi_heads
 from detection.Multi_roi_heads import Multi_roi_heads
 from torchvision.ops import misc as misc_nn_ops
-from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers
-from torchvision.models.resnet import resnet50, ResNet50_Weights
+from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers, BackboneWithFPN
+from torchvision.models.swin_transformer import swin_t, Swin_T_Weights
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import MultiScaleRoIAlign
 import torch.nn.functional as F
 from utils.norm import get_layer, set_layer, LayerNorm2d
 
+class BackboneWithFPN(BackboneWithFPN):
+    def forward(self, x):
+        x= self.body(x)
+        for key in x:
+            #print(x[key].shape)
+            x[key] =x[key].permute(0,3,1,2)
+           #print(x[key].shape)
+        x= self.fpn(x)
+        return x
+
+def _swin_fpn_extractor(backbone):
+    #returned_layers = [1, 2, 3, 4]
+    returned_layers =['1', '3', '5', '7']
+    return_layers = {f"{k}": str(v) for v, k in enumerate(returned_layers)}
+    in_channels_stage2 = 96 
+    in_channels_list = [in_channels_stage2 * 2 ** (i) for i in range(len(returned_layers))]
+    out_channels = 256
+    return BackboneWithFPN(
+        backbone, return_layers, in_channels_list, out_channels
+    )
+    
 
 class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
     def __init__(self, backbone, num_classes):
@@ -92,42 +113,14 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
 
 def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, coco_model=False, use_self_attn = False, loss_type ='fasterrcnn1', **kwargs):
     # Load Faster RCNN pre-trained model
-    weights_backbone= ResNet50_Weights.IMAGENET1K_V1
-    weights_backbone = ResNet50_Weights.verify(weights_backbone)
+    weights_backbone= Swin_T_Weights.IMAGENET1K_V1
+    weights_backbone = Swin_T_Weights.verify(weights_backbone)
+    #weights_backbone = None
+    
+    backbone = swin_t(weights=weights_backbone, progress = True).features
 
-
-
-    is_trained = weights_backbone is not None
-    trainable_backbone_layers=5
-    trainable_backbone_layers = _validate_trainable_layers(is_trained, trainable_backbone_layers, 5, 3)
-    if norm == None:
-        norm_layer = misc_nn_ops.FrozenBatchNorm2d
-    else:
-        norm_layer = nn.BatchNorm2d
-    backbone = resnet50(weights=weights_backbone, progress = True, norm_layer=norm_layer)
-
-
-    if norm == 'ln' or norm =='gn':
-        for name, module in backbone.named_modules():
-            if isinstance(module, nn.BatchNorm2d):
-                # Get current bn layer
-                bn = get_layer(backbone, name)
-                
-                
-                if norm == 'ln':
-                    # Create new ln layer
-                    ln = LayerNorm2d(bn.num_features)
-                    # Assign mn
-                    print("Swapping {} with {}".format(bn, ln))
-                    set_layer(backbone, name, ln)
-                elif norm =='gn':
-                    # Create new gn layer
-                    gn = nn.GroupNorm(1, bn.num_features)
-                    # Assign mn
-                    print("Swapping {} with {}".format(bn, gn))
-                    set_layer(backbone, name, gn)
-    print(backbone)
-    backbone = _resnet_fpn_extractor(backbone, trainable_backbone_layers)
+    
+    backbone = _swin_fpn_extractor(backbone)
     
     model = Multiview_fasterrcnn(backbone = backbone, num_classes=num_classes)
     model.transform = GeneralizedRCNNTransform( size[0], size[1], [0.485, 0.456, 0.406], [0.229, 0.224, 0.225], fixed_size= size)
@@ -135,7 +128,7 @@ def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, c
     box_roi_pool=None
     box_head=None
     box_predictor=None
-    box_score_thresh= 1e-7
+    box_score_thresh= 0
     box_nms_thresh=0.1
     box_detections_per_img=100
     box_fg_iou_thresh=0.5

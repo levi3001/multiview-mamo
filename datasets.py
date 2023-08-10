@@ -27,7 +27,7 @@ def train_transform(size):
     return T.Compose([
     T.Breast_crop(),
     T.RandomHorizontalFlip(p=0.2),
-    #T.RandomVerticalFlip(p=0.2),
+    T.RandomVerticalFlip(p=0.2),
     T.Gaussian_noise(),
     T.RandomResize([size]),
     T.ToTensor(),
@@ -51,7 +51,7 @@ def create_train_dataset(
     img_size, 
     classes,
 ):
-    train_dataset = CustomDataset1(
+    train_dataset = CustomDataset2(
         train_dir_images, 
         train_dir_labels,
         img_size, 
@@ -66,7 +66,7 @@ def create_valid_dataset(
     img_size, 
     classes,
 ):
-    valid_dataset = CustomDataset1(
+    valid_dataset = CustomDataset2(
         train_dir_images, 
         train_dir_labels,
         img_size, 

@@ -96,7 +96,7 @@ class Multi_roi_heads(RoIHeads):
         
         
         self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
-        self.pos_encode = PositionEmbeddingSine(256)
+        self.pos_encode = PositionEmbeddingSine(512)
         self.loss_type =loss_type 
         if self.loss_type == 'fasterrcnn1':
                 self.loss_func = fastrcnn_loss1

@@ -209,6 +209,15 @@ def return_fasterrcnn_resnet50_fpn_sigmoid(
     )
     return model
 
+def return_fasterrcnn_swint_fpn_sigmoid(
+    num_classes,size= (1400,1700), norm= None, pretrained=True, coco_model=False, loss_type = 'fasterrcnn1'
+):
+    model = fasterrcnn_swint_fpn_sigmoid.create_model(
+        num_classes, size=size, norm= norm, pretrained=pretrained, coco_model=coco_model, loss_type= loss_type
+    )
+    return model
+
+
 create_model = {
     'fasterrcnn_resnet50_fpn': return_fasterrcnn_resnet50_fpn,
     'fasterrcnn_mobilenetv3_large_fpn': return_fasterrcnn_mobilenetv3_large_fpn,
@@ -235,5 +244,6 @@ create_model = {
     'fasterrcnn_vitdet_tiny': return_fasterrcnn_vitdet_tiny,
     'fasterrcnn_mobilevit_xxs': return_fasterrcnn_mobilevit_xxs,
     'fasterrcnn_regnet_y_400mf': return_fasterrcnn_regnet_y_400mf,
-    'fasterrcnn_resnet50_fpn_sigmoid' : return_fasterrcnn_resnet50_fpn_sigmoid
+    'fasterrcnn_resnet50_fpn_sigmoid' : return_fasterrcnn_resnet50_fpn_sigmoid,
+    'fasterrcnn_swint_fpn_sigmoid' : return_fasterrcnn_swint_fpn_sigmoid
 }

@@ -150,7 +150,7 @@ class DDSMDataset1(Dataset):
         self.transforms = transforms
         self.images_path = images_path
         self.finding_path = csv_path+'/ddsm_description_cases.csv'
-        self.img_path = csv_path+f'/data1.csv'
+        self.img_path = csv_path+f'/data.csv'
         self.img_size = img_size
         self.classes = classes
         self.mode = mode
@@ -183,7 +183,7 @@ class DDSMDataset1(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -380,7 +380,7 @@ class DDSMDataset2(Dataset):
         self.transforms = transforms
         self.images_path = images_path
         self.finding_path = csv_path+'/ddsm_description_cases.csv'
-        self.img_path = csv_path+f'/data1.csv'
+        self.img_path = csv_path+f'/data.csv'
         self.img_size = img_size
         self.classes = classes
         self.mode = mode
@@ -414,7 +414,7 @@ class DDSMDataset2(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -664,7 +664,7 @@ class TwoviewDDSMDataset1(Dataset):
         self.transforms = transforms
         self.images_path = images_path
         self.finding_path = csv_path+'/ddsm_description_cases.csv'
-        self.img_path = csv_path+f'/data1.csv'
+        self.img_path = csv_path+f'/data.csv'
         self.img_size = img_size
         self.classes = classes
         self.mode = mode
@@ -699,7 +699,7 @@ class TwoviewDDSMDataset1(Dataset):
         path= self.image_id[self.image_id['image_id']== image_name]['path'].values[0]
         # Read the image
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif('../'+path)
 
         # Convert BGR to RGB color format.
         
