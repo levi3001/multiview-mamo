@@ -48,7 +48,7 @@ def evaluate(
     target_MLO = []
     preds_MLO = []
     counter = 0
-    for images_CC, images_MLO, targets_CC, targets_MLO in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
+    for images_CC, images_MLO, targets_CC, targets_MLO in metric_logger.log_every(data_loader, 100, header):
         counter += 1
         images_CC = list(image_CC.to(device) for image_CC in images_CC)
         images_MLO = list(image_MLO.to(device) for image_MLO in images_MLO)
@@ -79,8 +79,8 @@ def evaluate(
                 preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
                 preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
                 preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
-                preds.append(preds_dict)
-                target.append(true_dict)
+                preds.append(preds_dict.copy())
+                target.append(true_dict.copy())
             #####################################
         pred(true_dict_CC, preds_dict_CC, targets_CC, outputs_CC, images_CC, preds_CC, target_CC)
         pred(true_dict_MLO, preds_dict_MLO, targets_MLO, outputs_MLO, images_MLO, preds_MLO, target_MLO)

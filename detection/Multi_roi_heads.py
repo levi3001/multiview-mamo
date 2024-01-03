@@ -9,7 +9,7 @@ from torchvision.ops import boxes as box_ops, roi_align
 from torchvision.models.detection.roi_heads import RoIHeads 
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from detection.transformer import CrossviewTransformer
-from detection.position_encoding import PositionEmbeddingSine
+from detection.position_encoding import PositionEmbeddingSine, PositionEmbeddingSine1
 from detection.loss import fastrcnn_loss1, Mix_loss, Focal_loss_l1
 
 
@@ -96,7 +96,7 @@ class Multi_roi_heads(RoIHeads):
         
         
         self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
-        self.pos_encode = PositionEmbeddingSine(512)
+        self.pos_encode = PositionEmbeddingSine1(512)
         self.loss_type =loss_type 
         if self.loss_type == 'fasterrcnn1':
                 self.loss_func = fastrcnn_loss1

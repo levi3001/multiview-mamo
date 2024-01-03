@@ -27,7 +27,7 @@ class BackboneWithFPN(BackboneWithFPN):
         for key in x:
             #print(x[key].shape)
             x[key] =x[key].permute(0,3,1,2)
-           #print(x[key].shape)
+            #print(x[key].shape)
         x= self.fpn(x)
         return x
 
@@ -64,14 +64,6 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
             original_image_sizes.append((val[0], val[1]))
 
         images, targets = self.transform(images, targets)
-        # if targets[0]['boxes'].shape[0]>0:
-        #     xmin, ymin, xmax, ymax = targets[0]['boxes'][0]
-        #     img=images.tensors[0].permute(1,2,0).cpu().numpy().copy()
-        #     img= img*np.array([ 0.229, 0.224, 0.225])+np.array([0.485 , 0.456, 0.406 ])
-        #     print(img.shape)
-        #     img =cv2.rectangle(img = (img*255).astype(np.uint8), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
-        #     plt.imshow(img)
-        #     plt.show()
         # Check for degenerate boxes
         # TODO: Move this to a function
         if targets is not None:
@@ -101,7 +93,7 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
         detections_CC, detections_MLO, detector_losses_CC, detector_losses_MLO = self.roi_heads(feat_CC, proposals_CC, image_CC.image_sizes,\
                                                                                                 feat_MLO, proposals_MLO, image_MLO.image_sizes,\
                                                                                                     target_CC, target_MLO)
-        detections_CC = self.transform.postprocess(detections_CC, image_CC.image_sizes, original_image_sizes_CC)  # type: ignore[operator]
+        detections_CC = self.transform.postprocess(detections_CC, image_CC.image_sizes, original_image_sizes_CC)  
         detections_MLO = self.transform.postprocess(detections_MLO, image_MLO.image_sizes, original_image_sizes_MLO)
         losses_CC = {}
         losses_CC.update(detector_losses_CC)

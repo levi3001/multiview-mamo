@@ -1,15 +1,3 @@
-"""
-USAGE
-
-# training with Faster RCNN ResNet50 FPN model without mosaic or any other augmentation:
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/voc.yaml --no-mosaic --batch 4
-
-# Training on ResNet50 FPN with custom project folder name with mosaic augmentation (ON by default):
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
-
-# Training on ResNet50 FPN with custom project folder name with mosaic augmentation (ON by default) and added training augmentations:
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --use-train-aug --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
-"""
 from torch_utils.engine import (
     train_one_epoch_multi, utils
 )
@@ -21,25 +9,22 @@ from datasets import (
     create_train_dataset_multi, create_valid_dataset_multi, create_train_loader, create_valid_loader,
 )
 from datasets_DDSM import(
-    create_train_dataset_DDSM_multi, create_test_dataset_DDSM, create_valid_dataset_DDSM_multi
+    create_train_dataset_DDSM_multi, create_valid_dataset_DDSM_multi, 
 )
 from models_multiview.create_multiview_model import create_model
 from utils.general import (
     set_training_dir, Averager, 
     save_model, save_loss_plot,
     show_tranformed_image,
-    save_mAP, save_model_state, SaveBestModel,
+    save_froc, save_model_state, SaveBestModel,
     yaml_save, init_seeds
 )
 from utils.logging import (
     set_log, coco_log,
     set_summary_writer, 
     tensorboard_loss_log, 
-    tensorboard_map_log,
+    tensorboard_froc_log,
     csv_log,
-    wandb_log, 
-    wandb_save_model,
-    wandb_init
 )
 
 from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
@@ -197,8 +182,8 @@ def main(args):
     # Initialize distributed mode.
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "29500"
-    utils.init_distributed_mode(args)
-
+    #utils.init_distributed_mode(args)
+    args['distributed']= False
     # Load the data configurations
     with open(args['data']) as file:
         data_configs = yaml.safe_load(file)
@@ -290,12 +275,8 @@ def main(args):
     loss_objectness_list = []
     loss_rpn_list = []
     train_loss_list_epoch = []
-    val_map_05 =[]
-    val_map =[]
-    val_map_05_CC = []
-    val_map_CC = []
-    val_map_05_MLO = []
-    val_map_MLO = []
+    val_froc_10 =[]
+    val_froc_05 =[]
     start_epochs = 0
 
     if args['weights'] is None:
@@ -343,13 +324,14 @@ def main(args):
             if checkpoint['train_loss_list_epoch']:
                 print('Loading previous epoch wise loss list...')
                 train_loss_list_epoch = checkpoint['train_loss_list_epoch']
-            if checkpoint['val_map']:
+            if checkpoint['val_froc_05']:
                 print('Loading previous mAP list')
-                val_map = checkpoint['val_map']
-            if checkpoint['val_map_05']:
-                val_map_05 = checkpoint['val_map_05']
+                val_froc_05 = checkpoint['val_froc_05']
+            if checkpoint['val_froc_10']:
+                val_froc_10 = checkpoint['val_froc_10']
 
     model = model.to(DEVICE)
+    args['distributed']= False
     if args['distributed']:
         model = torch.nn.parallel.DistributedDataParallel(
             model, device_ids=[args['gpu']]
@@ -395,8 +377,6 @@ def main(args):
         scheduler = None
 
     save_best_model = SaveBestModel()
-    #coco= None
-    #coco = get_coco_api_from_dataset_multi(valid_loader)
     for epoch in range(start_epochs, NUM_EPOCHS):
         train_loss_hist.reset()
 
@@ -416,31 +396,6 @@ def main(args):
         )
             
         if epoch% args['eval_frequent'] ==0:
-            # stats_CC, stats_MLO = evaluate_multi(
-            #     model, 
-            #     valid_loader, 
-            #     device=DEVICE,
-            #     save_valid_preds=SAVE_VALID_PREDICTIONS,
-            #     out_dir=OUT_DIR,
-            #     classes=CLASSES,
-            #     colors=COLORS
-            # )
-            # val_map_05_CC.append(stats_CC[1])
-            # val_map_CC.append(stats_CC[0])
-            # val_map_05_MLO.append(stats_MLO[1])
-            # val_map_MLO.append(stats_MLO[0])
-            # val_map.append((stats_CC[0]+stats_MLO[0])/2)
-            # val_map_05.append((stats_CC[1]+ stats_MLO[1])/2)        
-            # # Save mAP plots.
-            # save_mAP(OUT_DIR, val_map_05, val_map)
-            # # Save mAP plot using TensorBoard.
-            # tensorboard_map_log(
-            #     name='mAP', 
-            #     val_map_05=np.array(val_map_05), 
-            #     val_map=np.array(val_map),
-            #     writer=writer,
-            #     epoch=epoch
-            # )
             stats = evaluate(
                 model, 
                 valid_loader, 
@@ -448,15 +403,15 @@ def main(args):
                 num_classes = NUM_CLASSES,
                 classes=CLASSES,
             )
-            val_map_05.append(stats[2])
-            val_map.append(stats[1])        
+            val_froc_05.append(stats[1])
+            val_froc_10.append(stats[2])        
             # Save mAP plots.
-            save_mAP(OUT_DIR, val_map_05, val_map)
+            save_froc(OUT_DIR, val_froc_10, val_froc_05)
             # Save mAP plot using TensorBoard.
-            tensorboard_map_log(
+            tensorboard_froc_log(
                 name='mAP', 
-                val_map_05=np.array(val_map_05), 
-                val_map=np.array(val_map),
+                val_froc_10=np.array(val_froc_10), 
+                val_froc_05=np.array(val_froc_05),
                 writer=writer,
                 epoch=epoch
             )
@@ -550,19 +505,19 @@ def main(args):
             optimizer, 
             train_loss_list, 
             train_loss_list_epoch,
-            val_map,
-            val_map_05,
+            val_froc_05,
+            val_froc_10,
             OUT_DIR,
             data_configs,
             args['model']
         )
         # Save the model dictionary only for the current epoch.
         save_model_state(model, OUT_DIR, data_configs, args['model'])
-        # Save best model if the current mAP @0.5:0.95 IoU is
+        # Save best model if the current recall at fppi 0.5 is
         # greater than the last hightest.
         save_best_model(
             model, 
-            val_map[-1], 
+            val_froc_05[-1], 
             epoch, 
             OUT_DIR,
             data_configs,

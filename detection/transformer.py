@@ -16,10 +16,10 @@ from torch import nn, Tensor
 
 class CrossviewTransformer(nn.Module):
 
-    def __init__(self, d_model=1024, nhead=8, num_encoder_layers=6,
-                 num_decoder_layers=6, dim_feedforward=2048, dropout=0.1,
-                 activation="relu", normalize_before=False,
-                 return_intermediate_dec=False, use_self_attn = False):
+    def __init__(self, d_model=1024, nhead=8, num_encoder_layers=1,
+                num_decoder_layers=1, dim_feedforward=2048, dropout=0.1,
+                activation="relu", normalize_before=False,
+                return_intermediate_dec=False, use_self_attn = False):
         super().__init__()
         self.use_self_attn =use_self_attn
 
@@ -31,7 +31,7 @@ class CrossviewTransformer(nn.Module):
         decoder_norm1 = nn.LayerNorm(d_model)
         decoder_norm2 = nn.LayerNorm(d_model)
         self.decoder = TwoviewTransformerDecoder(decoder_layer, num_decoder_layers, decoder_norm1, decoder_norm2,
-                                          return_intermediate=return_intermediate_dec)
+                                        return_intermediate=return_intermediate_dec)
 
         self._reset_parameters()
 
@@ -45,7 +45,7 @@ class CrossviewTransformer(nn.Module):
 
     def forward(self, roi_CC, roi_MLO, CC_key_padding_mask, MLO_key_padding_mask, MLO_pos, CC_pos ):
         roi_CC, roi_MLO = self.decoder(roi_CC, roi_MLO, CC_key_padding_mask= CC_key_padding_mask , MLO_key_padding_mask = MLO_key_padding_mask,
-                          MLO_pos= MLO_pos, CC_pos= CC_pos)
+                        MLO_pos= MLO_pos, CC_pos= CC_pos)
         return roi_CC, roi_MLO
 
 
@@ -69,26 +69,27 @@ class TwoviewTransformerDecoder(nn.Module):
                 MLO_pos: Optional[Tensor] = None,
                 CC_pos: Optional[Tensor] = None):
 
-
+        if self.norm1 is not None:
+            roi_CC = self.norm1(roi_CC)
+            roi_MLO = self.norm2(roi_MLO)
+            
         for i in range(self.num_layers):
             layer_CC_MLO= self.layers[0][i]
             layer_MLO_CC = self.layers[1][i]
             roi_CC1 = layer_CC_MLO(roi_CC, roi_MLO, tgt_mask=CC_mask,
-                           memory_mask=MLO_mask,
-                           tgt_key_padding_mask=CC_key_padding_mask,
-                           memory_key_padding_mask=MLO_key_padding_mask,
-                           pos=MLO_pos, query_pos=CC_pos)
+                        memory_mask=MLO_mask,
+                        tgt_key_padding_mask=CC_key_padding_mask,
+                        memory_key_padding_mask=MLO_key_padding_mask,
+                        pos=MLO_pos, query_pos=CC_pos)
             #h= layer_CC_MLO.linear1.weight.register_hook(lambda grad: print(grad is not None, i) )
             roi_MLO1 = layer_MLO_CC(roi_MLO, roi_CC, tgt_mask=MLO_mask,
-                           memory_mask=CC_mask,
-                           tgt_key_padding_mask=MLO_key_padding_mask,
-                           memory_key_padding_mask=CC_key_padding_mask,
-                           pos=CC_pos, query_pos=MLO_pos)
+                        memory_mask=CC_mask,
+                        tgt_key_padding_mask=MLO_key_padding_mask,
+                        memory_key_padding_mask=CC_key_padding_mask,
+                        pos=CC_pos, query_pos=MLO_pos)
             roi_CC = roi_CC1
             roi_MLO = roi_MLO1
-        if self.norm1 is not None:
-            roi_CC = self.norm1(roi_CC)
-            roi_MLO = self.norm2(roi_MLO)
+
 
         return roi_CC, roi_MLO
 
@@ -97,8 +98,8 @@ class TwoviewTransformerDecoder(nn.Module):
 
 class TransformerDecoderLayer(nn.Module):
 
-    def __init__(self, d_model, nhead, dim_feedforward=1024, dropout=0.1,
-                 activation="relu", normalize_before=False, use_self_attn =False):
+    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
+                activation="relu", normalize_before=False, use_self_attn =False):
         super().__init__()
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first= True)
         # Implementation of Feedforward model
@@ -120,15 +121,15 @@ class TransformerDecoderLayer(nn.Module):
         self.normalize_before = normalize_before
 
     def with_pos_embed(self, tensor, pos: Optional[Tensor]):
-        return tensor if pos is None else tensor + pos
+        return tensor if pos is None else tensor+pos
 
     def forward(self, tgt, memory,
-                     tgt_mask: Optional[Tensor] = None,
-                     memory_mask: Optional[Tensor] = None,
-                     tgt_key_padding_mask: Optional[Tensor] = None,
-                     memory_key_padding_mask: Optional[Tensor] = None,
-                     pos: Optional[Tensor] = None,
-                     query_pos: Optional[Tensor] = None):
+                    tgt_mask: Optional[Tensor] = None,
+                    memory_mask: Optional[Tensor] = None,
+                    tgt_key_padding_mask: Optional[Tensor] = None,
+                    memory_key_padding_mask: Optional[Tensor] = None,
+                    pos: Optional[Tensor] = None,
+                    query_pos: Optional[Tensor] = None):
         
         if self.use_self_attn:
             q = k = self.with_pos_embed(tgt, query_pos)
@@ -136,12 +137,11 @@ class TransformerDecoderLayer(nn.Module):
                                 key_padding_mask=tgt_key_padding_mask)[0]
             tgt = tgt + self.dropout1(tgt2)
             tgt = self.norm1(tgt)
-        
-        
+
         tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
-                                   key=self.with_pos_embed(memory, pos),
-                                   value=memory, attn_mask=memory_mask,
-                                   key_padding_mask=memory_key_padding_mask)[0]
+                                key=self.with_pos_embed(memory, pos),
+                                value=memory, attn_mask=memory_mask,
+                                key_padding_mask=memory_key_padding_mask)[0]
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))

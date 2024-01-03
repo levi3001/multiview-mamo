@@ -49,7 +49,7 @@ class Averager:
 class SaveBestModel:
     """
     Class to save the best model while training. If the current epoch's 
-    validation mAP @0.5:0.95 IoU higher than the previous highest, then save the
+    validation Recall@0.5 higher than the previous highest, then save the
     model state.
     """
     def __init__(
@@ -153,7 +153,7 @@ def save_loss_plot(
     figure_1.savefig(f"{OUT_DIR}/{save_name}.png")
     print('SAVING PLOTS COMPLETE...')
 
-def save_mAP(OUT_DIR, map_05, map):
+def save_froc(OUT_DIR, val_froc_10, val_froc_05):
     """
     Saves the mAP@0.5 and mAP@0.5:0.95 per epoch.
 
@@ -164,15 +164,15 @@ def save_mAP(OUT_DIR, map_05, map):
     figure = plt.figure(figsize=(10, 7), num=1, clear=True)
     ax = figure.add_subplot()
     ax.plot(
-        map_05, color='tab:orange', linestyle='-', 
-        label='mAP@0.5'
+        val_froc_10, color='tab:orange', linestyle='-', 
+        label='R@1.0'
     )
     ax.plot(
-        map, color='tab:red', linestyle='-', 
-        label='mAP@0.5:0.95'
+        val_froc_05, color='tab:red', linestyle='-', 
+        label='R@0.5'
     )
     ax.set_xlabel('Epochs')
-    ax.set_ylabel('mAP')
+    ax.set_ylabel('FROC')
     ax.legend()
     figure.savefig(f"{OUT_DIR}/map.png")
 

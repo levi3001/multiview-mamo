@@ -1,15 +1,4 @@
-"""
-USAGE
 
-# training with Faster RCNN ResNet50 FPN model without mosaic or any other augmentation:
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/voc.yaml --no-mosaic --batch 4
-
-# Training on ResNet50 FPN with custom project folder name with mosaic augmentation (ON by default):
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
-
-# Training on ResNet50 FPN with custom project folder name with mosaic augmentation (ON by default) and added training augmentations:
-python train.py --model fasterrcnn_resnet50_fpn --epochs 2 --use-train-aug --data data_configs/voc.yaml --name resnet50fpn_voc --batch 4
-"""
 from torch_utils.engine import (
     train_one_epoch, utils
 )
@@ -117,13 +106,6 @@ def parse_opt():
         help='training result dir name in outputs/training/, (default res_#)'
     )
     parser.add_argument(
-        '-vt', '--vis-transformed', 
-        dest='vis_transformed', 
-        action='store_true',
-        help='visualize transformed images fed to the network'
-    )
-
-    parser.add_argument(
         '-opt', '--optimizer', 
         default= 'sgd', 
         type=str, 
@@ -198,8 +180,8 @@ def main(args):
     # Initialize distributed mode.
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "29500"
-    utils.init_distributed_mode(args)
-
+    #utils.init_distributed_mode(args)
+    args['distributed']= False
 
     # Load the data configurations
     with open(args['data']) as file:

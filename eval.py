@@ -50,7 +50,7 @@ def evaluate(
     target = []
     preds = []
     counter = 0
-    for images, targets in tqdm(metric_logger.log_every(data_loader, 100, header), total=len(data_loader)):
+    for images, targets in metric_logger.log_every(data_loader, 100, header):
         counter += 1
         images = list(img.to(device) for img in images)
 

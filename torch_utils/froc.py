@@ -114,11 +114,15 @@ def update_stats(
             for j, boxes in enumerate(targets[i]['boxes']):
                 
                 if targets[i]['labels'][j] == cat:
-                    target_cat.append(boxes)
+                    boxes1 = boxes.clone()
+                    boxes1[2:] -= boxes1[:2]
+                    target_cat.append(boxes1)
             for j, boxes in enumerate(preds[i]['boxes']):
                 #print(i, preds[i]['labels'][j], preds[i]['boxes'][j])
                 if preds[i]['labels'][j] == cat:
-                    pred_cat.append(boxes)
+                    boxes1 = boxes.clone()
+                    boxes1[2:] -= boxes1[:2]
+                    pred_cat.append(boxes1)
             n_gt = len(target_cat)
             n_pr = len(pred_cat)
             #print(i, cat, n_gt, n_pr)
@@ -204,9 +208,7 @@ class FROC():
         thres_list = np.append(thres_list, thres_list2[1:])
         print(thres_list)
         first = np.ones([self.num_classes],dtype= bool)
-        for score_thres in tqdm(
-                thres_list
-        ):
+        for score_thres in thres_list:
             #print(score_thres)
             preds= update_scores(preds,score_thres)
             stats = init_stats(targets, self.num_classes)
@@ -261,4 +263,5 @@ class FROC():
         ax.set_ylabel('Recall', fontsize=30)
         plt.xlim([0,5])
         plt.savefig(f'result_{self.view}.png')
+        plt.close(fig)
         return  output['avg']

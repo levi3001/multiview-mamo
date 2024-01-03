@@ -1,15 +1,12 @@
 import logging
 import os
 import pandas as pd
-import wandb
 import cv2
 import numpy as np
 
 from torch.utils.tensorboard.writer import SummaryWriter
 
 # Initialize Weights and Biases.
-def wandb_init(name):
-    wandb.init(name=name)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -70,12 +67,12 @@ def tensorboard_loss_log(name, loss_np_arr, writer, epoch):
     """
     writer.add_scalar(name, loss_np_arr[-1], epoch)
 
-def tensorboard_map_log(name, val_map_05, val_map, writer, epoch):
+def tensorboard_froc_log(name, val_froc_10, val_froc_05, writer, epoch):
     writer.add_scalars(
         name,
         {
-            'mAP@0.5': val_map_05[-1], 
-            'mAP@0.5_0.95': val_map[-1]
+            'R@1.0': val_froc_10[-1], 
+            'R@0.5': val_froc_05[-1]
         },
         epoch
     )
@@ -83,8 +80,8 @@ def tensorboard_map_log(name, val_map_05, val_map, writer, epoch):
 def create_log_csv(log_dir):
     cols = [
         'epoch', 
-        'map', 
-        'map_05',
+        'froc_05', 
+        'froc_10',
         'train loss',
         'train cls loss',
         'train box reg loss',
@@ -110,8 +107,8 @@ def csv_log(
     df = pd.DataFrame(
         {
             'epoch': int(epoch+1),
-            'map_05': [float(stats[0])],
-            'map': [float(stats[1])],
+            'froc_10': [float(stats[0])],
+            'froc_05': [float(stats[1])],
             'train loss': train_loss_list[-1],
             'train cls loss': loss_cls_list[-1],
             'train box reg loss': loss_box_reg_list[-1],
@@ -136,90 +133,3 @@ def overlay_on_canvas(bg, image):
     bg_copy[cy:cy + h1, cx:cx + w1] = image
     return bg_copy * 255.
 
-def wandb_log(
-    epoch_loss, 
-    loss_list_batch,
-    loss_cls_list,
-    loss_box_reg_list,
-    loss_objectness_list,
-    loss_rpn_list,
-    val_map_05, 
-    val_map,
-    val_pred_image,
-    image_size
-):
-    """
-    :param epoch_loss: Single loss value for the current epoch.
-    :param batch_loss_list: List containing loss values for the current 
-        epoch's loss value for each batch.
-    :param val_map_05: Current epochs validation mAP@0.5 IoU.
-    :param val_map: Current epochs validation mAP@0.5:0.95 IoU. 
-    """
-    # WandB logging.
-    for i in range(len(loss_list_batch)):
-        wandb.log(
-            {'train_loss_iter': loss_list_batch[i],},
-        )
-    # for i in range(len(loss_cls_list)):
-    wandb.log(
-        {
-            'train_loss_cls': loss_cls_list[-1],
-            'train_loss_box_reg': loss_box_reg_list[-1],
-            'train_loss_obj': loss_objectness_list[-1],
-            'train_loss_rpn': loss_rpn_list[-1]
-        }
-    )
-    wandb.log(
-        {
-            'train_loss_epoch': epoch_loss
-        },
-    )
-    wandb.log(
-        {'val_map_05_95': val_map}
-    )
-    wandb.log(
-        {'val_map_05': val_map_05}
-    )
-
-    #bg = np.full((image_size * 2, image_size * 2, 3), 114, dtype=np.float32)
-    bg = np.full((3518,2800,3),114, dtype=np.float32)
-    if len(val_pred_image) == 1:
-        log_image = overlay_on_canvas(bg, val_pred_image[0])
-        wandb.log({'predictions': [wandb.Image(log_image)]})
-
-    if len(val_pred_image) == 2:
-        log_image = cv2.hconcat(
-            [
-                overlay_on_canvas(bg, val_pred_image[0]), 
-                overlay_on_canvas(bg, val_pred_image[1])
-            ]
-        )
-        wandb.log({'predictions': [wandb.Image(log_image)]})
-
-    if len(val_pred_image) > 2 and len(val_pred_image) <= 8:
-        log_image = overlay_on_canvas(bg, val_pred_image[0])
-        for i in range(len(val_pred_image)-1):
-            log_image = cv2.hconcat([
-                log_image, 
-                overlay_on_canvas(bg, val_pred_image[i+1])
-            ])
-        wandb.log({'predictions': [wandb.Image(log_image)]})
-    
-    if len(val_pred_image) > 8:
-        log_image = overlay_on_canvas(bg, val_pred_image[0])
-        for i in range(len(val_pred_image)-1):
-            if i == 7:
-                break
-            log_image = cv2.hconcat([
-                log_image, 
-                overlay_on_canvas(bg, val_pred_image[i-1])
-            ])
-        wandb.log({'predictions': [wandb.Image(log_image)]})
-
-def wandb_save_model(model_dir):
-    """
-    Uploads the models to Weights&Biases.
-
-    :param model_dir: Local disk path where models are saved.
-    """
-    wandb.save(os.path.join(model_dir, 'best_model.pth'))
