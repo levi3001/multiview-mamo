@@ -472,6 +472,17 @@ class TwoviewDDSMDataset1(Dataset):
         for i in range(len(anno)):
             # Map the current object name to `classes` list to get
             # the label index and append to `labels` list.
+                # if anno['breast_birads'][i] in ['BI-RADS 3', 'BI-RADS 4', 'BI-RADS 5']:
+                #     labels.append(self.classes.index('malignancy'))
+                # else:
+                #     labels.append(self.classes.index('__background__'))
+            # cate = anno['pathology'][i]
+            # if cate in self.classes:
+            #     labels.append(self.classes.index(cate))
+            # elif cate == 'BENIGN_WITHOUT_CALLBACK':
+            #     labels.append(self.classes.index('BENIGN'))
+            # else:
+            #     continue
             cate = anno['abnormality_type'][i]
             if cate in self.classes:
                 labels.append(self.classes.index(cate))

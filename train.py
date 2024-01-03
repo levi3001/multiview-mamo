@@ -18,18 +18,15 @@ from utils.general import (
     set_training_dir, Averager, 
     save_model, save_loss_plot,
     show_tranformed_image,
-    save_mAP, save_model_state, SaveBestModel,
+    save_froc, save_model_state, SaveBestModel,
     yaml_save, init_seeds
 )
 from utils.logging import (
     set_log, coco_log,
     set_summary_writer, 
     tensorboard_loss_log, 
-    tensorboard_map_log,
+    tensorboard_froc_log,
     csv_log,
-    wandb_log, 
-    wandb_save_model,
-    wandb_init
 )
 from torch_utils.coco_utils import get_coco_api_from_dataset_multi,  get_coco_api_from_dataset
 import multiprocessing as mp
@@ -276,8 +273,8 @@ def main(args):
     loss_objectness_list = []
     loss_rpn_list = []
     train_loss_list_epoch = []
-    val_map_05 = []
-    val_map = []
+    val_froc_10 =[]
+    val_froc_05 =[]
     start_epochs = 0
 
     if args['weights'] is None:
@@ -325,11 +322,11 @@ def main(args):
             if checkpoint['train_loss_list_epoch']:
                 print('Loading previous epoch wise loss list...')
                 train_loss_list_epoch = checkpoint['train_loss_list_epoch']
-            if checkpoint['val_map']:
-                print('Loading previous mAP list')
-                val_map = checkpoint['val_map']
-            if checkpoint['val_map_05']:
-                val_map_05 = checkpoint['val_map_05']
+            if checkpoint['val_froc_05']:
+                print('Loading previous froc list')
+                val_froc_05 = checkpoint['val_froc_05']
+            if checkpoint['val_froc_10']:
+                val_froc_10 = checkpoint['val_froc_10']
 
     model = model.to(DEVICE)
     if args['distributed']:
@@ -403,15 +400,15 @@ def main(args):
                 num_classes = NUM_CLASSES,
                 classes=CLASSES,
             )
-            val_map_05.append(stats[2])
-            val_map.append(stats[1])        
+            val_froc_05.append(stats[1])
+            val_froc_10.append(stats[2])        
             # Save mAP plots.
-            save_mAP(OUT_DIR, val_map_05, val_map)
+            save_froc(OUT_DIR, val_froc_10, val_froc_05)
             # Save mAP plot using TensorBoard.
-            tensorboard_map_log(
-                name='mAP', 
-                val_map_05=np.array(val_map_05), 
-                val_map=np.array(val_map),
+            tensorboard_froc_log(
+                name='froc', 
+                val_froc_10=np.array(val_froc_10), 
+                val_froc_05=np.array(val_froc_05),
                 writer=writer,
                 epoch=epoch
             )
@@ -504,19 +501,19 @@ def main(args):
             optimizer, 
             train_loss_list, 
             train_loss_list_epoch,
-            val_map,
-            val_map_05,
+            val_froc_05,
+            val_froc_10,
             OUT_DIR,
             data_configs,
             args['model']
         )
         # Save the model dictionary only for the current epoch.
         save_model_state(model, OUT_DIR, data_configs, args['model'])
-        # Save best model if the current mAP @0.5:0.95 IoU is
+        # Save best model if the current R@0.5 is
         # greater than the last hightest.
         save_best_model(
             model, 
-            val_map[-1], 
+            val_froc_05[-1], 
             epoch, 
             OUT_DIR,
             data_configs,

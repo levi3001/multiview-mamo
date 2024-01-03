@@ -71,6 +71,9 @@ class Multi_roi_heads(RoIHeads):
         keypoint_roi_pool=None,
         keypoint_head=None,
         keypoint_predictor=None,
+         
+        # compute attention
+        compute_attn= False,
         loss_type= 'fasterrcnn1'):
         super().__init__(box_roi_pool,
         box_head,
@@ -95,8 +98,8 @@ class Multi_roi_heads(RoIHeads):
         )
         
         
-        self.crossview = CrossviewTransformer(use_self_attn=use_self_attn)
-        self.pos_encode = PositionEmbeddingSine1(512)
+        self.crossview = CrossviewTransformer(use_self_attn=use_self_attn, compute_attn=compute_attn)
+        self.pos_encode = PositionEmbeddingSine(512)
         self.loss_type =loss_type 
         if self.loss_type == 'fasterrcnn1':
                 self.loss_func = fastrcnn_loss1

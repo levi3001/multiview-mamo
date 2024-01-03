@@ -240,7 +240,8 @@ def main(args):
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
             CLASSES,
-        )
+        )        
+        
     print('Creating data loaders')
     if args['distributed']:
         train_sampler = distributed.DistributedSampler(
@@ -252,7 +253,7 @@ def main(args):
     else:
         train_sampler = RandomSampler(train_dataset)
         valid_sampler = SequentialSampler(valid_dataset)
-
+    
     train_loader = create_train_loader(
         train_dataset, BATCH_SIZE, NUM_WORKERS, batch_sampler=train_sampler
     )
@@ -262,8 +263,6 @@ def main(args):
     #print(f"Number of training samples: {len(train_dataset)}")
     print(f"Number of validation samples: {len(valid_dataset)}\n")
 
-    if VISUALIZE_TRANSFORMED_IMAGES:
-        show_tranformed_image(train_loader, DEVICE, CLASSES, COLORS)
 
     # Initialize the Averager class.
     train_loss_hist = Averager()

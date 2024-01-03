@@ -10,41 +10,17 @@ import torch
 from typing import List, Tuple
 from torchvision.ops import misc as misc_nn_ops
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers, BackboneWithFPN
+from detection.fpn import _swin_fpn_extractor
 from torchvision.models.swin_transformer import swin_t, Swin_T_Weights
 import torch.nn.functional as F
 from utils.norm import LayerNorm2d, get_layer, set_layer
 
-class BackboneWithFPN(BackboneWithFPN):
-    def forward(self, x):
-        x= self.body(x)
-        for key in x:
-            #print(x[key].shape)
-            x[key] =x[key].permute(0,3,1,2)
-           #print(x[key].shape)
-        x= self.fpn(x)
-        return x
 
-def _swin_fpn_extractor(backbone):
-    #returned_layers = [1, 2, 3, 4]
-    returned_layers =['1', '3', '5', '7']
-    return_layers = {f"{k}": str(v) for v, k in enumerate(returned_layers)}
-    in_channels_stage2 = 96 
-    in_channels_list = [in_channels_stage2 * 2 ** (i) for i in range(len(returned_layers))]
-    out_channels = 256
-    return BackboneWithFPN(
-        backbone, return_layers, in_channels_list, out_channels
-    )
-    
 def create_model(num_classes, size=(1400,1700), norm = None, pretrained=True, coco_model=False, loss_type ='fasterrcnn1'):
     weights_backbone= Swin_T_Weights.IMAGENET1K_V1
     weights_backbone = Swin_T_Weights.verify(weights_backbone)
     #weights_backbone = None
-
-
-    if norm == None:
-        norm_layer = misc_nn_ops.FrozenBatchNorm2d
-    else:
-        norm_layer = nn.BatchNorm2d
+    
     backbone = swin_t(weights=weights_backbone, progress = True).features
 
     for name, module in backbone.named_children():

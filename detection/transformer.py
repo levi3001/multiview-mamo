@@ -12,21 +12,21 @@ from typing import Optional, List
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
-
+from detection.multihead_attention import MultiheadAttention 
 
 class CrossviewTransformer(nn.Module):
 
     def __init__(self, d_model=1024, nhead=8, num_encoder_layers=1,
-                num_decoder_layers=1, dim_feedforward=2048, dropout=0.1,
-                activation="relu", normalize_before=False,
-                return_intermediate_dec=False, use_self_attn = False):
+                 num_decoder_layers=1, dim_feedforward=2048, dropout=0.1,
+                 activation="relu", normalize_before=False,
+                 return_intermediate_dec=False, use_self_attn = False, compute_attn=False ):
         super().__init__()
         self.use_self_attn =use_self_attn
 
         decoder_layer0 = nn.ModuleList([TransformerDecoderLayer(d_model, nhead, dim_feedforward,
-                                                dropout, activation, normalize_before, use_self_attn) for i in range(num_decoder_layers)])
+                                                dropout, activation, normalize_before, use_self_attn, compute_attn) for i in range(num_decoder_layers)])
         decoder_layer1 = nn.ModuleList([TransformerDecoderLayer(d_model, nhead, dim_feedforward,
-                                                dropout, activation, normalize_before, use_self_attn) for i in range(num_decoder_layers)])
+                                                dropout, activation, normalize_before, use_self_attn, compute_attn) for i in range(num_decoder_layers)])
         decoder_layer = nn.ModuleList([decoder_layer0, decoder_layer1])
         decoder_norm1 = nn.LayerNorm(d_model)
         decoder_norm2 = nn.LayerNorm(d_model)
@@ -89,8 +89,6 @@ class TwoviewTransformerDecoder(nn.Module):
                         pos=CC_pos, query_pos=MLO_pos)
             roi_CC = roi_CC1
             roi_MLO = roi_MLO1
-
-
         return roi_CC, roi_MLO
 
 
@@ -98,10 +96,10 @@ class TwoviewTransformerDecoder(nn.Module):
 
 class TransformerDecoderLayer(nn.Module):
 
-    def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
-                activation="relu", normalize_before=False, use_self_attn =False):
+    def __init__(self, d_model, nhead, dim_feedforward=1024, dropout=0.1,
+                 activation="relu", normalize_before=False, use_self_attn =False, compute_attn=False):
         super().__init__()
-        self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout, batch_first= True)
+        self.multihead_attn = MultiheadAttention(d_model, nhead, dropout=dropout, batch_first= True)
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)
@@ -119,7 +117,7 @@ class TransformerDecoderLayer(nn.Module):
 
         self.activation = _get_activation_fn(activation)
         self.normalize_before = normalize_before
-
+        self.compute_attn= compute_attn
     def with_pos_embed(self, tensor, pos: Optional[Tensor]):
         return tensor if pos is None else tensor+pos
 
@@ -137,11 +135,15 @@ class TransformerDecoderLayer(nn.Module):
                                 key_padding_mask=tgt_key_padding_mask)[0]
             tgt = tgt + self.dropout1(tgt2)
             tgt = self.norm1(tgt)
-
-        tgt2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
-                                key=self.with_pos_embed(memory, pos),
-                                value=memory, attn_mask=memory_mask,
-                                key_padding_mask=memory_key_padding_mask)[0]
+        
+        
+        tgt2, attn2 = self.multihead_attn(query=self.with_pos_embed(tgt, query_pos),
+                                   key=self.with_pos_embed(memory, pos),
+                                   value=memory, attn_mask=memory_mask,
+                                   key_padding_mask=memory_key_padding_mask, average_attn_weights=False)
+        if self.compute_attn:
+            self.attn= attn2
+            self.tgt = tgt
         tgt = tgt + self.dropout2(tgt2)
         tgt = self.norm2(tgt)
         tgt2 = self.linear2(self.dropout(self.activation(self.linear1(tgt))))

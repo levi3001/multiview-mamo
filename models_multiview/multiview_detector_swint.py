@@ -12,6 +12,7 @@ import torchvision
 from torch import nn, Tensor
 from torchvision.models.detection import generalized_rcnn, faster_rcnn, roi_heads
 from detection.Multi_roi_heads import Multi_roi_heads
+from detection.fpn import _swin_fpn_extractor
 from torchvision.ops import misc as misc_nn_ops
 from torchvision.models.detection.backbone_utils import _resnet_fpn_extractor, _validate_trainable_layers, BackboneWithFPN
 from torchvision.models.swin_transformer import swin_t, Swin_T_Weights
@@ -20,27 +21,6 @@ from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.ops import MultiScaleRoIAlign
 import torch.nn.functional as F
 from utils.norm import get_layer, set_layer, LayerNorm2d
-
-class BackboneWithFPN(BackboneWithFPN):
-    def forward(self, x):
-        x= self.body(x)
-        for key in x:
-            #print(x[key].shape)
-            x[key] =x[key].permute(0,3,1,2)
-            #print(x[key].shape)
-        x= self.fpn(x)
-        return x
-
-def _swin_fpn_extractor(backbone):
-    #returned_layers = [1, 2, 3, 4]
-    returned_layers =['1', '3', '5', '7']
-    return_layers = {f"{k}": str(v) for v, k in enumerate(returned_layers)}
-    in_channels_stage2 = 96 
-    in_channels_list = [in_channels_stage2 * 2 ** (i) for i in range(len(returned_layers))]
-    out_channels = 256
-    return BackboneWithFPN(
-        backbone, return_layers, in_channels_list, out_channels
-    )
     
 
 class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
@@ -103,7 +83,7 @@ class Multiview_fasterrcnn(faster_rcnn.FasterRCNN):
         losses_MLO.update(proposal_losses_MLO)
         return self.eager_outputs(losses_CC, losses_MLO, detections_CC, detections_MLO)
 
-def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, coco_model=False, use_self_attn = False, loss_type ='fasterrcnn1', **kwargs):
+def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, coco_model=False, use_self_attn = False, compute_attn= False, loss_type ='fasterrcnn1', **kwargs):
     # Load Faster RCNN pre-trained model
     weights_backbone= Swin_T_Weights.IMAGENET1K_V1
     weights_backbone = Swin_T_Weights.verify(weights_backbone)
@@ -152,6 +132,7 @@ def create_model(num_classes, size= (1400, 1700), norm= None, pretrained=True, c
             box_nms_thresh,
             box_detections_per_img,
             use_self_attn,   ###use self attention in decoder
+            compute_attn= compute_attn,
             loss_type = loss_type
     )
     
