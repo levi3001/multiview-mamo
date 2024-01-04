@@ -174,7 +174,12 @@ def parse_opt():
         type=int, 
         help='evaluate frequent'
     )
-
+    parser.add_argument(
+        '--data-dir', 
+        default='../',
+        help='data directory'
+    )
+    
     args = vars(parser.parse_args())
     return args
 
@@ -192,10 +197,11 @@ def main(args):
     
     # Settings/parameters/constants.
     dataset_name = data_configs['DATASET']
-    TRAIN_DIR_IMAGES = os.path.normpath(data_configs['TRAIN_DIR_IMAGES'])
-    TRAIN_DIR_LABELS = os.path.normpath(data_configs['TRAIN_DIR_LABELS'])
-    VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
-    VALID_DIR_LABELS = os.path.normpath(data_configs['VALID_DIR_LABELS'])
+    DATA_DIR= args['data_dir']
+    TRAIN_DIR_IMAGES = os.path.join(DATA_DIR, os.path.normpath(data_configs['TRAIN_DIR_IMAGES']))
+    TRAIN_DIR_LABELS = os.path.join(DATA_DIR, os.path.normpath(data_configs['TRAIN_DIR_LABELS']))
+    VALID_DIR_IMAGES = os.path.join(DATA_DIR, os.path.normpath(data_configs['VALID_DIR_IMAGES']))
+    VALID_DIR_LABELS = os.path.join(DATA_DIR, os.path.normpath(data_configs['VALID_DIR_LABELS']))
     CLASSES = data_configs['CLASSES']
     NUM_CLASSES = data_configs['NC']
     NUM_WORKERS = args['workers']
@@ -234,12 +240,14 @@ def main(args):
             TRAIN_DIR_LABELS,
             IMAGE_SIZE, 
             CLASSES,
+            DATA_DIR,
         )
         valid_dataset = create_valid_dataset_DDSM_multi(
             VALID_DIR_IMAGES, 
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
             CLASSES,
+            DATA_DIR,
         )        
         
     print('Creating data loaders')
@@ -324,7 +332,7 @@ def main(args):
                 print('Loading previous epoch wise loss list...')
                 train_loss_list_epoch = checkpoint['train_loss_list_epoch']
             if checkpoint['val_froc_05']:
-                print('Loading previous mAP list')
+                print('Loading previous froc list')
                 val_froc_05 = checkpoint['val_froc_05']
             if checkpoint['val_froc_10']:
                 val_froc_10 = checkpoint['val_froc_10']
@@ -408,7 +416,7 @@ def main(args):
             save_froc(OUT_DIR, val_froc_10, val_froc_05)
             # Save mAP plot using TensorBoard.
             tensorboard_froc_log(
-                name='mAP', 
+                name='froc', 
                 val_froc_10=np.array(val_froc_10), 
                 val_froc_05=np.array(val_froc_05),
                 writer=writer,

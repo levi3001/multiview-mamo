@@ -47,6 +47,7 @@ def create_train_dataset_DDSM(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     train_dataset = DDSMDataset2(
         train_dir_images, 
@@ -54,7 +55,8 @@ def create_train_dataset_DDSM(
         img_size, 
         classes, 
         train_transform(img_size),
-        mode='train', 
+        mode='train',
+        data_dir= data_dir 
     )
     return train_dataset
 def create_valid_dataset_DDSM(
@@ -62,6 +64,7 @@ def create_valid_dataset_DDSM(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     valid_dataset = DDSMDataset2(
         train_dir_images, 
@@ -69,7 +72,8 @@ def create_valid_dataset_DDSM(
         img_size, 
         classes, 
         valid_transform(img_size),
-        mode='val', 
+        mode='val',
+        data_dir= data_dir 
     )
     return valid_dataset
 def create_test_dataset_DDSM(
@@ -77,6 +81,7 @@ def create_test_dataset_DDSM(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     valid_dataset = DDSMDataset2(
         train_dir_images, 
@@ -84,7 +89,8 @@ def create_test_dataset_DDSM(
         img_size, 
         classes, 
         valid_transform(img_size),
-        mode='test', 
+        mode='test',
+        data_dir= data_dir 
     )
     return valid_dataset
 
@@ -146,6 +152,7 @@ class DDSMDataset2(Dataset):
         classes, 
         transforms=None, 
         mode='train', 
+        data_dir='../'
     ):
         self.transforms = transforms
         self.images_path = images_path
@@ -155,6 +162,7 @@ class DDSMDataset2(Dataset):
         self.classes = classes
         self.mode = mode
         self.all_image_paths = []
+        self.data_dir= data_dir
         self.create_anno()
         print(self.annos)
 
@@ -184,7 +192,7 @@ class DDSMDataset2(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif(self.data_dir+'DDSM/'+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -359,6 +367,7 @@ def create_train_dataset_DDSM_multi(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     train_dataset = TwoviewDDSMDataset1(
         train_dir_images, 
@@ -366,7 +375,8 @@ def create_train_dataset_DDSM_multi(
         img_size, 
         classes, 
         train_transform(img_size),
-        mode='train', 
+        mode='train',
+        data_dir= data_dir 
     )
     return train_dataset
 def create_valid_dataset_DDSM_multi(
@@ -374,6 +384,7 @@ def create_valid_dataset_DDSM_multi(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     valid_dataset = TwoviewDDSMDataset1(
         train_dir_images, 
@@ -381,7 +392,8 @@ def create_valid_dataset_DDSM_multi(
         img_size, 
         classes, 
         valid_transform(img_size),
-        mode='val', 
+        mode='val',
+        data_dir= data_dir 
     )
     return valid_dataset
 def create_test_dataset_DDSM_multi(
@@ -389,6 +401,7 @@ def create_test_dataset_DDSM_multi(
     train_dir_labels, 
     img_size, 
     classes,
+    data_dir,
 ):
     valid_dataset = TwoviewDDSMDataset1(
         train_dir_images, 
@@ -396,7 +409,8 @@ def create_test_dataset_DDSM_multi(
         img_size, 
         classes, 
         valid_transform(img_size),
-        mode='test', 
+        mode='test',
+        data_dir= data_dir 
     )
     return valid_dataset
 
@@ -416,6 +430,7 @@ class TwoviewDDSMDataset1(Dataset):
         classes, 
         transforms=None, 
         mode='train', 
+        data_dir='../'
     ):
         self.transforms = transforms
         self.images_path = images_path
@@ -427,6 +442,7 @@ class TwoviewDDSMDataset1(Dataset):
         self.all_image_paths = []
         self.log_annot_issue_x = True
         self.log_annot_issue_y = True
+        self.data_dir=data_dir
         self.create_anno()
 
     def create_anno(self):
@@ -455,7 +471,7 @@ class TwoviewDDSMDataset1(Dataset):
         path= self.image_id[self.image_id['image_id']== image_name]['path'].values[0]
         # Read the image
 
-        image = read_tif('/shared/DDSM/'+path)
+        image = read_tif(self.data_dir+'DDSM/'+path)
 
         # Convert BGR to RGB color format.
         

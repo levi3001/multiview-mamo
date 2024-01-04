@@ -159,6 +159,11 @@ if __name__ == '__main__':
         dest='use_self_attn',
         action='store_true',
     )
+    parser.add_argument(
+        '--data-dir', 
+        default='../',
+        help='data directory'
+    )
         
     args = vars(parser.parse_args())
 
@@ -173,6 +178,9 @@ if __name__ == '__main__':
     except: # Else use the validation images.
         VALID_DIR_IMAGES = data_configs['VALID_DIR_IMAGES']
         VALID_DIR_LABELS = data_configs['VALID_DIR_LABELS']
+    DATA_DIR= args['data_dir']
+    VALID_DIR_IMAGES = os.path.join(DATA_DIR, VALID_DIR_IMAGES)    
+    VALID_DIR_LABELS = os.path.join(DATA_DIR, VALID_DIR_LABELS)
     dataset_name = data_configs['DATASET']
     NUM_CLASSES = data_configs['NC']
     CLASSES = data_configs['CLASSES']

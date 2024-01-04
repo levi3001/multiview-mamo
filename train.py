@@ -169,7 +169,12 @@ def parse_opt():
         type=int, 
         help='evaluate frequent'
     )
-
+    parser.add_argument(
+        '--data-dir', 
+        default='../',
+        help='data directory'
+    )
+    
     args = vars(parser.parse_args())
     return args
 
@@ -188,10 +193,11 @@ def main(args):
     
     # Settings/parameters/constants.
     dataset_name = data_configs['DATASET']
-    TRAIN_DIR_IMAGES = os.path.normpath(data_configs['TRAIN_DIR_IMAGES'])
-    TRAIN_DIR_LABELS = os.path.normpath(data_configs['TRAIN_DIR_LABELS'])
-    VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
-    VALID_DIR_LABELS = os.path.normpath(data_configs['VALID_DIR_LABELS'])
+    DATA_DIR= args['data_dir']
+    TRAIN_DIR_IMAGES = os.path.join(DATA_DIR, os.path.normpath(data_configs['TRAIN_DIR_IMAGES']))
+    TRAIN_DIR_LABELS = os.path.join(DATA_DIR, os.path.normpath(data_configs['TRAIN_DIR_LABELS']))
+    VALID_DIR_IMAGES = os.path.join(DATA_DIR, os.path.normpath(data_configs['VALID_DIR_IMAGES']))
+    VALID_DIR_LABELS = os.path.join(DATA_DIR, os.path.normpath(data_configs['VALID_DIR_LABELS']))
     CLASSES = data_configs['CLASSES']
     NUM_CLASSES = data_configs['NC']
     NUM_WORKERS = args['workers']
@@ -231,6 +237,7 @@ def main(args):
             TRAIN_DIR_LABELS,
             IMAGE_SIZE, 
             CLASSES,
+            DATA_DIR,
 
         )
         valid_dataset = create_valid_dataset_DDSM(
@@ -238,6 +245,8 @@ def main(args):
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
             CLASSES,
+            DATA_DIR,
+            
         )
     print('Creating data loaders')
     if args['distributed']:

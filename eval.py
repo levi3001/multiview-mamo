@@ -17,6 +17,7 @@ from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from pprint import pprint
 from tqdm import tqdm
+import os
 
 import torch
 import argparse
@@ -26,7 +27,6 @@ import time
 import numpy as np
 from torch_utils import froc
 torch.multiprocessing.set_sharing_strategy('file_system')
-
 
 
 @torch.inference_mode()
@@ -124,16 +124,16 @@ if __name__ == '__main__':
         default=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'),
         help='computation/training device, default is GPU if GPU present'
     )
-    parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='show class-wise mAP'
-    )
-    
+
     parser.add_argument(
         '--norm', 
         default=None,
         help='normalization type'
+    )
+    parser.add_argument(
+        '--data-dir', 
+        default='../',
+        help='data directory'
     )
     args = vars(parser.parse_args())
 
@@ -148,6 +148,9 @@ if __name__ == '__main__':
     except: # Else use the validation images.
         VALID_DIR_IMAGES = data_configs['VALID_DIR_IMAGES']
         VALID_DIR_LABELS = data_configs['VALID_DIR_LABELS']
+    DATA_DIR= args['data_dir']
+    VALID_DIR_IMAGES = os.path.join(DATA_DIR, VALID_DIR_IMAGES)    
+    VALID_DIR_LABELS = os.path.join(DATA_DIR, VALID_DIR_LABELS)
     NUM_CLASSES = data_configs['NC']
     CLASSES = data_configs['CLASSES']
     NUM_WORKERS = args['workers']
@@ -207,28 +210,3 @@ if __name__ == '__main__':
 
     print('\n')
     pprint(stats)
-    if args['verbose']:
-        print('\n')
-        pprint(f"Classes: {CLASSES}")
-        print('\n')
-        print('AP / AR per class')
-        empty_string = ''
-        if len(CLASSES) > 2: 
-            num_hyphens = 73
-            print('-'*num_hyphens)
-            print(f"|    | Class{empty_string:<16}| AP{empty_string:<18}| AR{empty_string:<18}|")
-            print('-'*num_hyphens)
-            class_counter = 0
-            for i in range(0, len(CLASSES)-1, 1):
-                class_counter += 1
-                print(f"|{class_counter:<3} | {CLASSES[i+1]:<20} | {np.array(stats['map_per_class'][i]):.3f}{empty_string:<15}| {np.array(stats['mar_100_per_class'][i]):.3f}{empty_string:<15}|")
-            print('-'*num_hyphens)
-            print(f"|Avg{empty_string:<23} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
-        else:
-            num_hyphens = 62
-            print('-'*num_hyphens)
-            print(f"|Class{empty_string:<10} | AP{empty_string:<18}| AR{empty_string:<18}|")
-            print('-'*num_hyphens)
-            print(f"|{CLASSES[1]:<15} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
-            print('-'*num_hyphens)
-            print(f"|Avg{empty_string:<12} | {np.array(stats['map']):.3f}{empty_string:<15}| {np.array(stats['mar_100']):.3f}{empty_string:<15}|")
