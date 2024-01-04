@@ -192,7 +192,7 @@ class DDSMDataset2(Dataset):
         anno =self.annos[self.annos['image_id']== image_name].reset_index()
 
 
-        image = read_tif(self.data_dir+'DDSM/'+path)
+        image = read_tif(self.data_dir+path)
         # Convert BGR to RGB color format.
         # Capture the corresponding XML file for getting the annotations.
         
@@ -471,7 +471,7 @@ class TwoviewDDSMDataset1(Dataset):
         path= self.image_id[self.image_id['image_id']== image_name]['path'].values[0]
         # Read the image
 
-        image = read_tif(self.data_dir+'DDSM/'+path)
+        image = read_tif(self.data_dir+path)
 
         # Convert BGR to RGB color format.
         

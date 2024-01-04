@@ -143,11 +143,11 @@ if __name__ == '__main__':
 
     # Validation settings and constants.
     try: # Use test images if present.
-        VALID_DIR_IMAGES = data_configs['TEST_DIR_IMAGES']
-        VALID_DIR_LABELS = data_configs['TEST_DIR_LABELS']
+        VALID_DIR_IMAGES = os.path.normpath(data_configs['TEST_DIR_IMAGES'])
+        VALID_DIR_LABELS = os.path.normpath(data_configs['TEST_DIR_LABELS'])
     except: # Else use the validation images.
-        VALID_DIR_IMAGES = data_configs['VALID_DIR_IMAGES']
-        VALID_DIR_LABELS = data_configs['VALID_DIR_LABELS']
+        VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
+        VALID_DIR_LABELS = os.path.normpath(data_configs['VALID_DIR_LABELS'])
     DATA_DIR= args['data_dir']
     VALID_DIR_IMAGES = os.path.join(DATA_DIR, VALID_DIR_IMAGES)    
     VALID_DIR_LABELS = os.path.join(DATA_DIR, VALID_DIR_LABELS)
@@ -193,6 +193,7 @@ if __name__ == '__main__':
                 VALID_DIR_LABELS, 
                 IMAGE_SIZE, 
                 CLASSES,
+                DATA_DIR
             )
     model.to(DEVICE).eval()
     

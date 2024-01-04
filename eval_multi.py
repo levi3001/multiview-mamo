@@ -15,7 +15,7 @@ from torch_utils import utils
 from torchmetrics.detection.mean_ap import MeanAveragePrecision
 from pprint import pprint
 from tqdm import tqdm
-
+import os
 import torch
 import argparse
 import yaml
@@ -173,11 +173,11 @@ if __name__ == '__main__':
 
     # Validation settings and constants.
     try: # Use test images if present.
-        VALID_DIR_IMAGES = data_configs['TEST_DIR_IMAGES']
-        VALID_DIR_LABELS = data_configs['TEST_DIR_LABELS']
+        VALID_DIR_IMAGES = os.path.normpath(data_configs['TEST_DIR_IMAGES'])
+        VALID_DIR_LABELS = os.path.normpath(data_configs['TEST_DIR_LABELS'])
     except: # Else use the validation images.
-        VALID_DIR_IMAGES = data_configs['VALID_DIR_IMAGES']
-        VALID_DIR_LABELS = data_configs['VALID_DIR_LABELS']
+        VALID_DIR_IMAGES = os.path.normpath(data_configs['VALID_DIR_IMAGES'])
+        VALID_DIR_LABELS = os.path.normpath(data_configs['VALID_DIR_LABELS'])
     DATA_DIR= args['data_dir']
     VALID_DIR_IMAGES = os.path.join(DATA_DIR, VALID_DIR_IMAGES)    
     VALID_DIR_LABELS = os.path.join(DATA_DIR, VALID_DIR_LABELS)
@@ -208,18 +208,19 @@ if __name__ == '__main__':
                 VALID_DIR_IMAGES, 
                 VALID_DIR_LABELS, 
                 IMAGE_SIZE, 
-                CLASSES
+                CLASSES,
             )
         elif dataset_name == 'DDSM':
             valid_dataset = create_test_dataset_DDSM_multi(
                 VALID_DIR_IMAGES, 
                 VALID_DIR_LABELS, 
                 IMAGE_SIZE, 
-                CLASSES
+                CLASSES,
+                DATA_DIR,
             )
     model.to(DEVICE).eval()
     
-    valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS)
+    valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS, )
 
 
     stats = evaluate(
