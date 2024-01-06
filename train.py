@@ -206,7 +206,6 @@ def main(args):
     NUM_EPOCHS = args['epochs']
     SAVE_VALID_PREDICTIONS = data_configs['SAVE_VALID_PREDICTION_IMAGES']
     BATCH_SIZE = args['batch']
-    VISUALIZE_TRANSFORMED_IMAGES = args['vis_transformed']
     OUT_DIR = set_training_dir(args['name'])
     COLORS = np.random.uniform(0, 1, size=(len(CLASSES), 3))
     # Set logging file.
@@ -269,8 +268,6 @@ def main(args):
     #print(f"Number of training samples: {len(train_dataset)}")
     print(f"Number of validation samples: {len(valid_dataset)}\n")
 
-    if VISUALIZE_TRANSFORMED_IMAGES:
-        show_tranformed_image(train_loader, DEVICE, CLASSES, COLORS)
 
     # Initialize the Averager class.
     train_loss_hist = Averager()
