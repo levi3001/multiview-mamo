@@ -7,7 +7,7 @@ This repository contains the code and experiments for the paper:
 
 * We introduce TransReg, a novel multi-view detector using cross-transformers for ipsilateral views on mammograms. To the best of our knowledge, our work is the first time cross-transformers have been incorporated into an object detection framework for modeling the intricate relationships between CC and MLO views. Our proposed TransReg outperforms all baseline and state-of-the-art methods on DDSM and VinDrMammo datasets in Free-Response Operating Characteristic (FROC) mass detection. When employing SwinT as the feature extractor network, our dualview approach surpasses even tri-view state-of-the-art models.\
 * We conduct extensive experiments to demonstrate that TransReg, using cross-transformer, have the ability to register masses in CC and MLO views and effectively utilize the cross-view information to generate diagnostic predictions automatically. These experiments thereby thoroughly analyze the capacity of our model to replicate the natural diagnostic workflow followed by expert radiologists, which serves as a reliable testament to the practical utility and the alignment of a CAD system to clinical practices
-## Model architecute:
+## Model architecture:
 <img src= "Demo_images/architecture.jpg" width=100%/>
 
 *TransReg architecture: The dual-views are encoded by shared weight Faster RCNN network to extract the region of interest (RoIs). The bidirectional cross-transformer network then leverages the cross-view information between RoIs from dual-views before making the final prediction. Positional encoding is added to the RoIs representation to include the spatial information*
@@ -60,7 +60,7 @@ python eval_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data-
 python eval_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data-directory -b 1  -w 16 --imgsz 500 1200 -m multiview_detector -mw model-weight
 
 ```
-# Acknowledge
+## Acknowledgement
 The code is based on (https://github.com/sovit-123/fasterrcnn-pytorch-training-pipeline)[https://github.com/sovit-123/fasterrcnn-pytorch-training-pipeline]
 
 
