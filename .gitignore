@@ -17,7 +17,7 @@ wandb/*
 #IPython file
 *.ipynb
 #image
-*.png
+mammo_viz_img/
 
 #result
 *.out
