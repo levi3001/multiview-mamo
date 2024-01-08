@@ -25,7 +25,7 @@ This repository contains the code and experiments for the paper:
 
 ## Dependencies
 ```
-Pytorch 1.13.1\
+Pytorch 1.13.1
 Python 3.7 
 ```
 ## Training and evaluation
