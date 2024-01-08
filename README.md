@@ -44,7 +44,7 @@ python train_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data
 python train_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data-directory -b 4  -j 16 -opt adam --lr 1e-5  --eval-frequent 2 --epochs 41 --model multiview_detector   --imgsz 500 1200 --loss mix  --name your-output-directory
 
 ```
-### Eval
+### Evaluation
 
 ```
 # Singview SwinT
@@ -60,5 +60,7 @@ python eval_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data-
 python eval_multi.py --data data_configs/vindr_mamo_2.yaml --data-dir your-data-directory -b 1  -w 16 --imgsz 500 1200 -m multiview_detector -mw model-weight
 
 ```
+# Acknowledge
+The code is based on (https://github.com/sovit-123/fasterrcnn-pytorch-training-pipeline)[https://github.com/sovit-123/fasterrcnn-pytorch-training-pipeline]
 
 
