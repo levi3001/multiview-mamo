@@ -1,7 +1,7 @@
 from torch_utils.engine import (
-    train_one_epoch_multi, utils
+    train_one_epoch_multi, utils, train_one_epoch_multi_reg
 )
-from eval_multi import evaluate
+from eval_multi import evaluate, evaluate_reg
 from torch.utils.data import (
     distributed, RandomSampler, SequentialSampler
 )
@@ -180,6 +180,12 @@ def parse_opt():
         help='data directory'
     )
     
+    parser.add_argument(
+        '--reg',
+        dest='reg',
+        action='store_true',
+    )
+    
     args = vars(parser.parse_args())
     return args
 
@@ -211,12 +217,12 @@ def main(args):
     SAVE_VALID_PREDICTIONS = data_configs['SAVE_VALID_PREDICTION_IMAGES']
     BATCH_SIZE = args['batch']
     VISUALIZE_TRANSFORMED_IMAGES = args['vis_transformed']
+    reg = args['reg']
     OUT_DIR = set_training_dir(args['name'])
     COLORS = np.random.uniform(0, 1, size=(len(CLASSES), 3))
     # Set logging file.
     set_log(OUT_DIR)
     writer = set_summary_writer(OUT_DIR)
-
     yaml_save(file_path=os.path.join(OUT_DIR, 'opt.yaml'), data=args)
 
     # Model configurations
@@ -227,12 +233,14 @@ def main(args):
             TRAIN_DIR_LABELS,
             IMAGE_SIZE, 
             CLASSES,
+            reg
         )
         valid_dataset = create_valid_dataset_multi(
             VALID_DIR_IMAGES, 
             VALID_DIR_LABELS, 
             IMAGE_SIZE, 
             CLASSES,
+            reg
         )
     if dataset_name == 'DDSM':
         train_dataset = create_train_dataset_DDSM_multi(
@@ -289,7 +297,7 @@ def main(args):
     if args['weights'] is None:
         print('Building model from scratch...')
         build_model = create_model[args['model']]
-        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'], loss_type= args['loss'])
+        model = build_model(num_classes=NUM_CLASSES, size=IMAGE_SIZE, norm = args['norm'], pretrained=True, coco_model= False, use_self_attn= args['use_self_attn'], loss_type= args['loss'], reg= reg)
 
     # Load pretrained weights if path is provided.
     if args['weights'] is not None:
@@ -385,31 +393,58 @@ def main(args):
 
     save_best_model = SaveBestModel()
     for epoch in range(start_epochs, NUM_EPOCHS):
-        train_loss_hist.reset()
+        if not reg:
+            train_loss_hist.reset()
 
-        _, batch_loss_list, \
-            batch_loss_cls_list, \
-            batch_loss_box_reg_list, \
-            batch_loss_objectness_list, \
-            batch_loss_rpn_list = train_one_epoch_multi(
-            model, 
-            optimizer, 
-            train_loader, 
-            DEVICE, 
-            epoch, 
-            train_loss_hist,
-            print_freq=100,
-            scheduler=scheduler
-        )
+            _, batch_loss_list, \
+                batch_loss_cls_list, \
+                batch_loss_box_reg_list, \
+                batch_loss_objectness_list, \
+                batch_loss_rpn_list = train_one_epoch_multi(
+                model, 
+                optimizer, 
+                train_loader, 
+                DEVICE, 
+                epoch, 
+                train_loss_hist,
+                print_freq=100,
+                scheduler=scheduler
+            )
+        else:
+            train_loss_hist.reset()
+
+            _, batch_loss_list, \
+                batch_loss_cls_list, \
+                batch_loss_box_reg_list, \
+                batch_loss_objectness_list, \
+                batch_loss_rpn_list = train_one_epoch_multi_reg(
+                model, 
+                optimizer, 
+                train_loader, 
+                DEVICE, 
+                epoch, 
+                train_loss_hist,
+                print_freq=100,
+                scheduler=scheduler
+            )
             
         if epoch% args['eval_frequent'] ==0:
-            stats = evaluate(
-                model, 
-                valid_loader, 
-                device=DEVICE,
-                num_classes = NUM_CLASSES,
-                classes=CLASSES,
-            )
+            if not reg:
+                stats = evaluate(
+                    model, 
+                    valid_loader, 
+                    device=DEVICE,
+                    num_classes = NUM_CLASSES,
+                    classes=CLASSES,
+                )
+            else:
+                stats = evaluate_reg(
+                    model, 
+                    valid_loader, 
+                    device=DEVICE,
+                    num_classes = NUM_CLASSES,
+                    classes=CLASSES,
+                )
             val_froc_05.append(stats[1])
             val_froc_10.append(stats[2])        
             # Save mAP plots.

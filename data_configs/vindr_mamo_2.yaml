@@ -1,7 +1,7 @@
 DATASET: vindr_mammo
-TRAIN_DIR_IMAGES:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images/
+TRAIN_DIR_IMAGES:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images_png/
 TRAIN_DIR_LABELS:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/
-VALID_DIR_IMAGES:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images/
+VALID_DIR_IMAGES:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/images_png/
 VALID_DIR_LABELS:  VinDr_Mammo/physionet.org/files/vindr-mammo/1.0.0/
 # Class names.
 CLASSES: [

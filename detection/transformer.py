@@ -43,7 +43,7 @@ class CrossviewTransformer(nn.Module):
             if p.dim() > 1:
                 nn.init.xavier_uniform_(p)
 
-    def forward(self, roi_CC, roi_MLO, CC_key_padding_mask, MLO_key_padding_mask, MLO_pos, CC_pos ):
+    def forward(self, roi_CC, roi_MLO, CC_key_padding_mask, MLO_key_padding_mask, MLO_pos, CC_pos, CC_mask= None, MLO_mask = None):
         roi_CC, roi_MLO = self.decoder(roi_CC, roi_MLO, CC_key_padding_mask= CC_key_padding_mask , MLO_key_padding_mask = MLO_key_padding_mask,
                         MLO_pos= MLO_pos, CC_pos= CC_pos)
         return roi_CC, roi_MLO

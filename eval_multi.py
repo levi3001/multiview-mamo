@@ -5,7 +5,7 @@ USAGE:
 python eval.py --config data_configs/voc.yaml --weights outputs/training/fasterrcnn_convnext_small_voc_15e_noaug/best_model.pth --model fasterrcnn_convnext_small
 """
 from datasets import (
-    create_valid_dataset_multi, create_valid_loader
+    create_valid_dataset_multi, create_valid_loader, create_test_dataset_multi
 )
 from datasets_DDSM import (
     create_test_dataset_DDSM_multi
@@ -103,6 +103,88 @@ def evaluate(
     metric = froc.FROC(num_classes, classes, threshold= [0.25, 0.5, 1,2,4], plot_title= 'FROC curve all',view = 'all')
     metric_summary =metric.compute(preds, target)
     return metric_summary
+
+
+@torch.inference_mode()
+def evaluate_reg(
+    model, 
+    data_loader, 
+    device, 
+    num_classes =2,
+    out_dir=None,
+    classes=None,
+    colors=None
+):
+    n_threads = torch.get_num_threads()
+    # FIXME remove this and make paste_masks_in_image run on the GPU
+    torch.set_num_threads(1)
+    cpu_device = torch.device("cpu")
+    model.eval()
+    metric_logger = utils.MetricLogger(delimiter="  ")
+    header = "Test:"
+
+    target_CC = []
+    preds_CC = []
+    target_MLO = []
+    preds_MLO = []
+    counter = 0
+    for images_CC, images_MLO, targets_CC, targets_MLO, pec_CC, pec_MLO, nip_CC, nip_MLO  in metric_logger.log_every(data_loader, 100, header):
+        counter += 1
+        images_CC = list(image_CC.to(device) for image_CC in images_CC)
+        images_MLO = list(image_MLO.to(device) for image_MLO in images_MLO)
+        #images = torch.stack(images)
+        #print(images.shape)
+        #images = images.to(device)
+        targets_CC = [{k: v.to(device) for k, v in t.items()} for t in targets_CC]
+        targets_MLO = [{k: v.to(device) for k, v in t.items()} for t in targets_MLO]
+        pec_CC, pec_MLO, nip_CC, nip_MLO = torch.stack(pec_CC).to(device), torch.stack(pec_MLO).to(device), torch.stack(nip_CC).to(device), torch.stack(nip_MLO).to(device)
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        model_time = time.time()
+        with torch.no_grad():
+            outputs_CC, outputs_MLO= model(images_CC, images_MLO, pec_CC, pec_MLO, nip_CC, nip_MLO, targets_CC, targets_MLO )
+            #print('out',outputs)
+            #print('tar',targets)
+        #####################################
+        true_dict_CC = dict()
+        true_dict_MLO = dict()
+        preds_dict_CC = dict()
+        preds_dict_MLO = dict()
+        
+        def pred(true_dict, preds_dict, targets, outputs, images, preds, target):
+            for i in range(len(images)):
+
+                true_dict['boxes'] = targets[i]['boxes'].detach().cpu()
+                true_dict['labels'] = targets[i]['labels'].detach().cpu()
+                preds_dict['boxes'] = outputs[i]['boxes'].detach().cpu()
+                preds_dict['scores'] = outputs[i]['scores'].detach().cpu()
+                preds_dict['labels'] = outputs[i]['labels'].detach().cpu()
+                preds.append(preds_dict.copy())
+                target.append(true_dict.copy())
+            #####################################
+        pred(true_dict_CC, preds_dict_CC, targets_CC, outputs_CC, images_CC, preds_CC, target_CC)
+        pred(true_dict_MLO, preds_dict_MLO, targets_MLO, outputs_MLO, images_MLO, preds_MLO, target_MLO)
+        outputs_CC = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_CC]
+        outputs_MLO = [{k: v.to(cpu_device) for k, v in t.items()} for t in outputs_MLO]
+    # gather the stats from all processes
+    
+    metric_logger.synchronize_between_processes()
+    torch.set_num_threads(n_threads)
+    #metric = MeanAveragePrecision(class_metrics=args['verbose'], iou_thresholds =[0.2])
+    preds = preds_CC + preds_MLO 
+    target= target_CC + target_MLO
+    # metric1 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve CC',view= 'CC')
+    # #metric.update(preds, target)
+    # #metric_summary = metric.compute()
+    # metric_summary_CC = metric1.compute(preds_CC,target_CC)
+    # metric2 = froc.FROC(num_classes, CLASSES, threshold=[0.25,0.5,1,2,4], plot_title= 'FROC curve MLO', view= 'MLO')
+    # metric_summary_MLO = metric2.compute(preds_MLO, target_MLO)
+    # return metric_summary_CC, metric_summary_MLO
+    metric = froc.FROC(num_classes, classes, threshold= [0.25, 0.5, 1,2,4], plot_title= 'FROC curve all',view = 'all')
+    metric_summary =metric.compute(preds, target)
+    return metric_summary
+
+
 if __name__ == '__main__':
     # Construct the argument parser.
     parser = argparse.ArgumentParser()
@@ -164,7 +246,11 @@ if __name__ == '__main__':
         default='../',
         help='data directory'
     )
-        
+    parser.add_argument(
+        '--reg',
+        dest='reg',
+        action='store_true',
+    )
     args = vars(parser.parse_args())
 
     # Load the data configurations
@@ -191,6 +277,8 @@ if __name__ == '__main__':
     # Model configurations
     IMAGE_SIZE = args['imgsz']
 
+    reg = args['reg']
+
     build_model = create_model[args['model']]
     # Load weights.
     if args['weights'] is not None:
@@ -204,7 +292,7 @@ if __name__ == '__main__':
                 checkpoint1[key] = checkpoint['model_state_dict'][key]
         model.load_state_dict(checkpoint1)
         if dataset_name == 'vindr_mammo':
-            valid_dataset = create_valid_dataset_multi(
+            valid_dataset = create_test_dataset_multi(
                 VALID_DIR_IMAGES, 
                 VALID_DIR_LABELS, 
                 IMAGE_SIZE, 
@@ -222,13 +310,21 @@ if __name__ == '__main__':
     
     valid_loader = create_valid_loader(valid_dataset, BATCH_SIZE, NUM_WORKERS, )
 
-
-    stats = evaluate(
-        model, 
-        valid_loader, 
-        device=DEVICE,
-        num_classes = NUM_CLASSES,
-        classes=CLASSES,
-    )
+    if not reg:
+        stats = evaluate(
+            model, 
+            valid_loader, 
+            device=DEVICE,
+            num_classes = NUM_CLASSES,
+            classes=CLASSES,
+        )
+    else:
+        stats = evaluate_reg(
+            model, 
+            valid_loader, 
+            device=DEVICE,
+            num_classes = NUM_CLASSES,
+            classes=CLASSES,
+        )
 
     

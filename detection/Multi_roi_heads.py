@@ -449,3 +449,206 @@ class Multi_concat_roi_heads(RoIHeads):
 
 
         return result_CC, result_MLO, loss_CC, loss_MLO
+    
+def bound_calculate_MLO(proposal_CC, nip_CC, pec_MLO, nip_MLO):
+    xmin, ymin, xmax, ymax = proposal_CC.permute(2,0,1)
+    # print(xmin.shape)
+    # print(nip_CC.shape)
+    # print(nip_CC[:,0].shape)
+    nip_CC_x = nip_CC[:,0].unsqueeze(1)
+    low_bound_rate= ((xmin-nip_CC_x)/(512-nip_CC_x))
+    #print("low rate", low_bound_rate, low_bound_rate.shape)
+    up_bound_rate = ((xmax-nip_CC_x)/(512-nip_CC_x))
+    a_MLO, b_MLO = pec_MLO.permute(1,0).unsqueeze(2)
+    #print("a_MLO", a_MLO, a_MLO.shape)
+    max_bound_MLO= a_MLO
+    nip_MLO_y, nip_MLO_x = nip_MLO[:,1].unsqueeze(1), nip_MLO[:,0].unsqueeze(1)
+    min_bound_MLO = nip_MLO_y - nip_MLO_x*b_MLO
+    up_bound_MLO = up_bound_rate*(max_bound_MLO-min_bound_MLO) + min_bound_MLO
+    low_bound_MLO = low_bound_rate*(max_bound_MLO-min_bound_MLO) + min_bound_MLO
+    return up_bound_MLO, low_bound_MLO
+
+def bound_calculate_CC(proposal_MLO, nip_CC, pec_MLO, nip_MLO):
+    xmin, ymin, xmax, ymax = proposal_MLO.permute(2,0,1)
+    
+    # print(xmin.shape)
+    # print(nip_CC.shape)
+    # print(nip_CC[:,0].shape)
+    nip_CC_x = nip_CC[:,0].unsqueeze(1)
+    a_MLO, b_MLO = pec_MLO.permute(1,0).unsqueeze(2)
+    #print("a_MLO", a_MLO, a_MLO.shape)
+    max_bound_MLO= a_MLO
+    nip_MLO_y, nip_MLO_x = nip_MLO[:,1].unsqueeze(1), nip_MLO[:,0].unsqueeze(1)
+    min_bound_MLO = nip_MLO_y - nip_MLO_x*b_MLO
+    up_bound_MLO = ymax - b_MLO*xmax
+    low_bound_MLO = ymin - b_MLO*xmin 
+    up_bound_rate = (up_bound_MLO - min_bound_MLO)/(max_bound_MLO - min_bound_MLO)
+    low_bound_rate = (low_bound_MLO - min_bound_MLO)/(max_bound_MLO - min_bound_MLO)
+    up_bound_CC = up_bound_rate*(512-nip_CC_x) + nip_CC_x
+    low_bound_CC = low_bound_rate*(512-nip_CC_x) + nip_CC_x
+    # print("up_bound_CC", up_bound_CC)
+    # print("low_bound_CC", low_bound_CC)
+    return up_bound_CC, low_bound_CC
+    
+class Multi_roi_heads_reg(Multi_roi_heads):
+    def forward(
+        self,
+        feat_CC,  # type: Dict[str, Tensor]
+        proposals_CC,  # type: List[Tensor]
+        image_shapes_CC,  # type: List[Tuple[int, int]]
+        feat_MLO,
+        proposals_MLO,
+        image_shapes_MLO,
+        pec_CC,
+        pec_MLO,
+        nip_CC,
+        nip_MLO,
+        target_CC=None,  # type: Optional[List[Dict[str, Tensor]]]
+        target_MLO=None,
+    ):
+        # type: (...) -> Tuple[List[Dict[str, Tensor]], Dict[str, Tensor]]
+        """
+        Args:
+            features (List[Tensor])
+            proposals (List[Tensor[N, 4]])
+            image_shapes (List[Tuple[H, W]])
+            targets (List[Dict])
+        """
+        if target_CC is not None:
+            for t in target_CC:
+                # TODO: https://github.com/pytorch/pytorch/issues/26731
+                floating_point_types = (torch.float, torch.double, torch.half)
+                if not t["boxes"].dtype in floating_point_types:
+                    print(t["boxes"])
+                    raise TypeError(f"target boxes must of float type, instead got {t['boxes'].dtype}")
+                if not t["labels"].dtype == torch.int64:
+                    raise TypeError(f"target labels must of int64 type, instead got {t['labels'].dtype}")
+                if self.has_keypoint():
+                    if not t["keypoints"].dtype == torch.float32:
+                        raise TypeError(f"target keypoints must of float type, instead got {t['keypoints'].dtype}")
+
+        if self.training:
+            proposals_CC, matched_idxs_CC, labels_CC, regression_targets_CC = self.select_training_samples(proposals_CC, target_CC)
+            proposals_MLO, matched_idxs_MLO, labels_MLO, regression_targets_MLO = self.select_training_samples(proposals_MLO, target_MLO)
+        else:
+            labels_CC = None
+            labels_MLO = None
+            regression_targets_CC = None
+            regression_targets_MLO = None
+            matched_idxs_CC = None
+            matched_idxs_MLO = None
+        box_features_CC = self.box_roi_pool(feat_CC, proposals_CC, image_shapes_CC)
+        box_features_MLO = self.box_roi_pool(feat_MLO, proposals_MLO, image_shapes_MLO)
+
+        box_features_CC = self.box_head(box_features_CC)
+        box_features_MLO =self.box_head(box_features_MLO)
+        boxes_per_image_CC = [boxes_in_image.shape[0] for boxes_in_image in proposals_CC]
+        boxes_per_image_MLO = [boxes_in_image.shape[0] for boxes_in_image in proposals_MLO]
+        box_features_CC = box_features_CC.split(boxes_per_image_CC, 0)
+        box_features_MLO = box_features_MLO.split(boxes_per_image_MLO, 0)
+        
+        box_features_CC,  CC_key_padding_mask = pad_sequence(box_features_CC)
+        box_features_MLO,  MLO_key_padding_mask = pad_sequence(box_features_MLO)
+        
+        CC_pos = self.pos_encode(proposals_CC)
+        MLO_pos = self.pos_encode(proposals_MLO)
+        CC_pos, _ = pad_sequence(CC_pos)
+        MLO_pos, _ = pad_sequence(MLO_pos)
+        # print(CC_pos.shape)
+        # print(CC_key_padding_mask[CC_key_padding_mask])
+        #CC_pos= None 
+        #MLO_pos =None
+        #CC_key_padding_mask = box_features_CC == 0
+        #MLO_key_padding_mask = box_features_MLO == 0
+        #print(len(proposals_MLO[0]))
+        proposals_MLO_torch = torch.stack(proposals_MLO)
+        proposals_CC_torch = torch.stack(proposals_CC)
+        #print(proposals_MLO_torch.shape)
+        
+        proposals_MLO_x = (proposals_MLO_torch[:,:,0] + proposals_MLO_torch[:,:,2])/2
+        proposals_MLO_y = (proposals_MLO_torch[:,:,1] + proposals_MLO_torch[:,:,3])/2
+        
+        proposals_CC_x = (proposals_CC_torch[:,:,0]+ proposals_CC_torch[:,:,2])/2
+        proposals_CC_y = (proposals_CC_torch[:,:,1]+ proposals_CC_torch[:,:,3])/2
+        # print(proposals_CC_torch.shape)
+        # print(nip_CC)
+
+
+        up_bound_MLO, low_bound_MLO = bound_calculate_MLO(proposals_CC_torch, nip_CC, pec_MLO, nip_MLO)
+        #print(up_bound_MLO, up_bound_MLO.shape)
+        a_MLO, b_MLO = pec_MLO.permute(1,0).unsqueeze(2)
+        #print(proposals_MLO_y - b_MLO*proposals_MLO_x )
+        bs, num_proposals_MLO =  proposals_MLO_y.shape
+        MLO_mask = (proposals_MLO_y - b_MLO*proposals_MLO_x ).unsqueeze(1).expand(bs,num_proposals_MLO,num_proposals_MLO)
+        #print("MLO mask",MLO_mask, MLO_mask.shape)
+        MLO_mask = torch.logical_not(torch.logical_and(MLO_mask <= up_bound_MLO.unsqueeze(2), MLO_mask >= low_bound_MLO.unsqueeze(2)))
+        #torch.set_printoptions(threshold=100)
+        #print(MLO_mask.nonzero(), MLO_mask.shape)
+
+
+        up_bound_CC, low_bound_CC = bound_calculate_CC(proposals_MLO_torch, nip_CC, pec_MLO, nip_MLO)
+        bs, num_proposals_CC =  proposals_CC_x.shape
+        #print("proposals_CC_x",proposals_CC_x, proposals_CC_x.shape)
+        CC_mask = proposals_CC_x.unsqueeze(1).expand(bs,num_proposals_CC,num_proposals_CC)
+        #print("CC mask",CC_mask, CC_mask.shape)
+        CC_mask = torch.logical_not(torch.logical_and(CC_mask <= up_bound_CC.unsqueeze(2), CC_mask >= low_bound_CC.unsqueeze(2)))
+        #torch.set_printoptions(threshold=100)
+        #print(CC_mask.nonzero(), CC_mask.shape)
+
+        box_features_CC, box_features_MLO = self.crossview(box_features_CC, box_features_MLO, CC_key_padding_mask, MLO_key_padding_mask,\
+            CC_pos= CC_pos, MLO_pos= MLO_pos, CC_mask= MLO_mask, MLO_mask = CC_mask)
+        box_features_CC = box_features_CC[~CC_key_padding_mask]
+        box_features_MLO = box_features_MLO[~MLO_key_padding_mask]
+        class_logits_CC, box_regression_CC = self.box_predictor(box_features_CC)
+        class_logits_MLO, box_regression_MLO = self.box_predictor(box_features_MLO)
+
+
+        result_CC: List[Dict[str, torch.Tensor]] = []
+        result_MLO: List[Dict[str, torch.Tensor]] = []
+        loss_CC = {}
+        loss_MLO = {}
+        if self.training:
+            if labels_CC is None or labels_MLO is None:
+                raise ValueError("labels cannot be None")
+            if regression_targets_CC is None or regression_targets_MLO is None:
+                raise ValueError("regression_targets cannot be None")
+            
+            if self.loss_type == 'mix':
+                box_regression_CC = self.box_coder.decode(box_regression_CC, proposals_CC)
+                regression_targets_CC = torch.cat(regression_targets_CC, dim =0)
+                regression_targets_CC = self.box_coder.decode(regression_targets_CC, proposals_CC).squeeze(1)
+                box_regression_MLO = self.box_coder.decode(box_regression_MLO, proposals_MLO)
+                regression_targets_MLO = torch.cat(regression_targets_MLO, dim=0)
+                regression_targets_MLO = self.box_coder.decode(regression_targets_MLO, proposals_MLO).squeeze(1)
+
+            
+            if torch.any(torch.isnan(class_logits_CC)):
+                print('finding nan')
+            loss_classifier_CC, loss_box_reg_CC = self.loss_func(class_logits_CC, box_regression_CC, labels_CC, regression_targets_CC)
+            loss_classifier_MLO, loss_box_reg_MLO = self.loss_func(class_logits_MLO, box_regression_MLO, labels_MLO, regression_targets_MLO)
+            loss_CC= {"loss_classifier": loss_classifier_CC, "loss_box_reg": loss_box_reg_CC }
+            loss_MLO = {"loss_classifier": loss_classifier_MLO, "loss_box_reg": loss_box_reg_MLO}
+        else:
+            boxes_CC, scores_CC, labels_CC = self.postprocess_detections(class_logits_CC, box_regression_CC, proposals_CC, image_shapes_CC)
+            boxes_MLO, scores_MLO, labels_MLO = self.postprocess_detections(class_logits_MLO, box_regression_MLO, proposals_MLO, image_shapes_MLO)
+            num_images = len(boxes_CC)
+            for i in range(num_images):
+                result_CC.append(
+                    {
+                        "boxes": boxes_CC[i],
+                        "labels": labels_CC[i],
+                        "scores": scores_CC[i],
+                    }
+                )
+            num_images = len(boxes_MLO)
+            for i in range(num_images):
+                result_MLO.append(
+                    {
+                        "boxes": boxes_MLO[i],
+                        "labels": labels_MLO[i],
+                        "scores": scores_MLO[i],
+                    }
+                )
+
+
+        return result_CC, result_MLO, loss_CC, loss_MLO

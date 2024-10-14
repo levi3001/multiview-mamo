@@ -372,35 +372,89 @@ def create_train_dataset_multi(
     train_dir_labels, 
     img_size, 
     classes,
+    reg = False,
 ):
-    train_dataset = TwoviewDataset1(
-        train_dir_images, 
-        train_dir_labels,
-        img_size, 
-        classes, 
-        train_transform(img_size),
-        train=True, 
-    )
-    return train_dataset
+    if not reg:
+        train_dataset = TwoviewDataset1(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            train_transform(img_size),
+            mode="train", 
+        )
+        return train_dataset
+    else:
+        train_dataset = TwoviewDatasetReg(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            train_transform(img_size),
+            mode="train", 
+        )
+        return train_dataset
+
 def create_valid_dataset_multi(
     train_dir_images, 
     train_dir_labels, 
     img_size, 
     classes,
+    reg = False,
 ):
-    valid_dataset = TwoviewDataset1(
-        train_dir_images, 
-        train_dir_labels,
-        img_size, 
-        classes, 
-        valid_transform(img_size),
-        train=False, 
+    if not reg:
+        valid_dataset = TwoviewDataset1(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            valid_transform(img_size),
+            mode="val", 
 
-    )
-    return valid_dataset
+        )
+        return valid_dataset
+    else:
+        valid_dataset = TwoviewDatasetReg(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            valid_transform(img_size),
+            mode="val", 
+
+        )
+        return valid_dataset
 
 
+def create_test_dataset_multi(
+    train_dir_images, 
+    train_dir_labels, 
+    img_size, 
+    classes,
+    reg = False,
+):
+    if not reg:
+        valid_dataset = TwoviewDataset1(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            valid_transform(img_size),
+            mode="test", 
 
+        )
+        return valid_dataset
+    else:
+        valid_dataset = TwoviewDatasetReg(
+            train_dir_images, 
+            train_dir_labels,
+            img_size, 
+            classes, 
+            valid_transform(img_size),
+            mode="test", 
+
+        )
+        return valid_dataset
 
 
 
@@ -412,15 +466,15 @@ class TwoviewDataset1(Dataset):
         img_size, 
         classes, 
         transforms=None, 
-        train=False, 
+        mode="train", 
     ):
         self.transforms = transforms
         self.images_path = images_path
-        self.finding_path = val_path+'/finding_annotations.csv'
-        self.breast_level_path = val_path+'/breast-level_annotations.csv'
+        self.finding_path = val_path+'/finding_annotations1.csv'
+        self.breast_level_path = val_path+'/breast-level_annotations1.csv'
         self.img_size = img_size
         self.classes = classes
-        self.train = train
+        self.mode = mode
         self.all_image_paths = []
         self.log_annot_issue_x = True
         self.log_annot_issue_y = True
@@ -436,15 +490,11 @@ class TwoviewDataset1(Dataset):
         #finding_mass= (finding['finding_categories']).apply(lambda i: 'No Finding' not in i)
         finding_mass = (finding['finding_categories']).apply(lambda i : 'Mass' in i or 'Suspicious Calcification' in i)
         finding = finding[finding_mass]
-        if self.train:
-            breast_level= breast_level[breast_level['split']== 'training']
-            finding =finding[finding['split']== 'training']
-        else:
-            breast_level= breast_level[breast_level['split']== 'test']
-            finding = finding[finding['split']== 'test']
+        breast_level= breast_level[breast_level['split']== self.mode]
+        finding =finding[finding['split']== self.mode]
         self.image_id = breast_level[['study_id', 'image_id', 'view_position', 'laterality']]
         
-        if self.train:
+        if self.mode == "train":
             image_id_mass = (self.image_id['study_id']).apply(lambda i: i in set(finding['study_id']))
             self.image_id = self.image_id[image_id_mass].reset_index()
         self.study_id = self.image_id['study_id'].unique()
@@ -1456,3 +1506,230 @@ class TwoviewDataset(Dataset):
 
     def __len__(self):
         return len(self.study_id)
+    
+
+
+class TwoviewDatasetReg(Dataset):
+    def __init__(
+        self, 
+        images_path, 
+        val_path,
+        img_size, 
+        classes, 
+        transforms=None, 
+        mode="train", 
+    ):
+        self.transforms = transforms
+        self.images_path = images_path
+        self.finding_path = val_path+'/finding_annotations1.csv'
+        self.breast_level_path = val_path+'/breast-level_annotations_pec.csv'
+        self.img_size = img_size
+        self.classes = classes
+        self.mode = mode
+        self.all_image_paths = []
+        self.log_annot_issue_x = True
+        self.log_annot_issue_y = True
+        self.create_anno()
+        print(self.annos)
+
+
+    def create_anno(self):
+        finding = pd.read_csv(self.finding_path)
+        breast_level = pd.read_csv(self.breast_level_path)
+        print(finding['finding_categories'].unique())
+        #finding_mass= (finding['finding_categories']).apply(lambda i: 'No Finding' not in i)
+        finding_mass = (finding['finding_categories']).apply(lambda i : 'Mass' in i or 'Suspicious Calcification' in i)
+        finding = finding[finding_mass]
+
+        breast_level= breast_level[breast_level['split']== self.mode]
+        finding =finding[finding['split']== self.mode]
+
+        self.image_id = breast_level[['study_id', 'image_id', 'view_position', 'laterality', 'pec', 'nip']]
+        if self.mode == "train":
+            image_id_mass = (self.image_id['study_id']).apply(lambda i: i in set(finding['study_id']))
+            self.image_id = self.image_id[image_id_mass].reset_index()
+        self.study_id = self.image_id['study_id'].unique()
+        print(len(self.study_id))
+        self.annos = finding[['study_id','image_id','height', 'width', 'xmin', 'ymin', 'xmax', 'ymax', 'finding_categories','breast_birads']].reset_index()
+
+    def load_image_and_labels(self, index,view = 'CC' ):
+        if index %2 ==0:
+            lat = 'R'
+        else:
+            lat = 'L'
+        study_id= self.study_id[int(index/2)]
+        image_name = self.image_id[self.image_id['study_id']== study_id]
+        image_name= image_name[image_name['view_position']== view]
+        image_name = image_name[image_name['laterality']== lat]
+        image_id = image_name['image_id'].values[0]
+        image_path = os.path.join(self.images_path, str(study_id)+'/'+str(image_id)+ '.png')
+
+        # Read the image.
+        image = cv2.imread(image_path)
+        nip = eval(image_name['nip'].values[0])
+        nip = torch.tensor(nip)
+        pec = eval(image_name['pec'].values[0])
+        pec = torch.tensor(pec)
+        # Convert BGR to RGB color format.
+        
+        # Capture the corresponding XML file for getting the annotations.
+        anno =self.annos[self.annos['image_id']== image_id].reset_index()
+        #print(anno)
+        boxes = []
+        orig_boxes = []
+        labels = []
+        image_width = image.shape[1]
+        image_height = image.shape[0]
+        # Box coordinates for xml files are extracted and corrected for image size given.
+        for i in range(len(anno)):
+            # Map the current object name to `classes` list to get
+            # the label index and append to `labels` list.
+            for cate in eval(anno['finding_categories'][i]):
+                if cate in self.classes:
+                    labels.append(self.classes.index(cate))
+                else:
+                    continue
+                # xmin = left corner x-coordinates
+                xmin = anno['xmin'][i]
+                # xmax = right corner x-coordinates
+                xmax = anno['xmax'][i]
+                # ymin = left corner y-coordinates
+                ymin = anno['ymin'][i]
+                # ymax = right corner y-coordinates
+                ymax = anno['ymax'][i]
+
+                xmin, ymin, xmax, ymax = self.check_image_and_annotation(
+                    xmin, 
+                    ymin, 
+                    xmax, 
+                    ymax, 
+                    image_width, 
+                    image_height, 
+                    orig_data=True
+                )
+
+                orig_boxes.append([xmin, ymin, xmax, ymax])
+                #print('xmin',xmin)
+                # Resize the bounding boxes according to the
+                # desired `width`, `height`.
+                xmin_final = (xmin/image_width)*image.shape[1]
+                xmax_final = (xmax/image_width)*image.shape[1]
+                ymin_final = (ymin/image_height)*image.shape[0]
+                ymax_final = (ymax/image_height)*image.shape[0]
+
+                xmin_final, ymin_final, xmax_final, ymax_final = self.check_image_and_annotation(
+                    xmin_final, 
+                    ymin_final, 
+                    xmax_final, 
+                    ymax_final, 
+                    image.shape[1], 
+                    image.shape[0],
+                    orig_data=False
+                )
+                boxes.append([xmin_final, ymin_final, xmax_final, ymax_final])
+        
+        # Bounding box to tensor.
+        boxes_length = len(boxes)
+        boxes = torch.as_tensor(boxes, dtype=torch.float32)
+
+        # Area of the bounding boxes.
+
+        area = (boxes[:, 3] - boxes[:, 1]) * (boxes[:, 2] - boxes[:, 0]) if boxes_length > 0 else torch.as_tensor(boxes, dtype=torch.float32)
+        # No crowd instances.
+        iscrowd = torch.zeros((boxes.shape[0],), dtype=torch.int64) if boxes_length > 0 else torch.as_tensor(boxes, dtype=torch.float32)
+        # Labels to tensor.
+        labels = torch.as_tensor(labels, dtype=torch.int64)
+        #print(labels, boxes)
+        return image, orig_boxes, \
+            boxes, labels, area, iscrowd, (image_width, image_height), lat, pec, nip
+
+    def check_image_and_annotation(
+        self, 
+        xmin, 
+        ymin, 
+        xmax, 
+        ymax, 
+        width, 
+        height, 
+        orig_data=False
+    ):
+        """
+        Check that all x_max and y_max are not more than the image
+        width or height.
+        """
+        if ymax > height:
+            ymax = height
+        if xmax > width:
+            xmax = width
+        if xmax - xmin <= 1.0:
+            if orig_data:
+                # print(
+                    # '\n',
+                    # '!!! xmax is equal to xmin in data annotations !!!'
+                    # 'Please check data'
+                # )
+                # print(
+                    # 'Increasing xmax by 1 pixel to continue training for now...',
+                    # 'THIS WILL ONLY BE LOGGED ONCE',
+                    # '\n'
+                # )
+                self.log_annot_issue_x = False
+            xmin = xmin - 1
+        if ymax - ymin <= 1.0:
+            if orig_data:
+                # print(
+                #     '\n',
+                #     '!!! ymax is equal to ymin in data annotations !!!',
+                #     'Please check data'
+                # )
+                # print(
+                #     'Increasing ymax by 1 pixel to continue training for now...',
+                #     'THIS WILL ONLY BE LOGGED ONCE',
+                #     '\n'
+                # )
+                self.log_annot_issue_y = False
+            ymin = ymin - 1
+        return xmin, ymin, xmax, ymax
+
+    def getitem_view(self,idx, view= 'CC'):
+        # Capture the image name and the full image path.
+        image, orig_boxes, boxes, \
+            labels, area, iscrowd, size, lat, pec, nip= self.load_image_and_labels(
+                index=idx, view= view
+        )
+
+
+        # Prepare the final `target` dictionary.
+        image = Image.fromarray(image)
+        target = {}
+        target["boxes"] = boxes
+        target["labels"] = labels
+        target["area"] = area
+        target["iscrowd"] = iscrowd
+        image_id = torch.tensor([idx])
+        target["image_id"] = image_id
+        if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
+            target['boxes'] = torch.zeros((0, 4), dtype=torch.int64)
+            
+        if lat == 'L':
+            image, target= Flip(img= image, target = target)
+        image, target = self.transforms(image = image, target = target)
+        # Fix to enable training without target bounding boxes,
+        # see https://discuss.pytorch.org/t/fasterrcnn-images-with-no-objects-present-cause-an-error/117974/4
+        if np.isnan((target['boxes']).numpy()).any() or target['boxes'].shape == torch.Size([0]):
+            target['boxes'] = torch.zeros((0, 4), dtype=torch.int64)
+        #debug
+        #print(target)
+        # if target['boxes'].shape[0]>0:
+        #     xmin, ymin, xmax, ymax = target['boxes'][0]
+        #     img =cv2.rectangle(img = np.array(image), pt1= (int(xmin), int(ymin)), pt2= (int(xmax), int(ymax)),color = (255,0,0),thickness= 4)
+        #     print(img.max())
+        #     plt.imsave(f'test{idx}.png',img.astype(np.uint8))
+        return image, target, pec, nip
+    def __getitem__(self, idx):
+        image_CC, target_CC, pec_CC, nip_CC = self.getitem_view(idx, 'CC')
+        image_MLO, target_MLO, pec_MLO, nip_MLO = self.getitem_view(idx, 'MLO')
+        return image_CC, image_MLO, target_CC, target_MLO, pec_CC, pec_MLO, nip_CC, nip_MLO
+
+    def __len__(self):
+        return len(self.study_id)*2
